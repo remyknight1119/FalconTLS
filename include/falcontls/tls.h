@@ -11,6 +11,17 @@
 #define FC_TLS_SESSION_ID_LENGTH            32
 #define FC_TLS_RANDOM_BYTES_LEN             28
 
+#define FC_TLS_RT_MAX_PLAIN_LENGTH              16384
+
+/* The maximum number of encrypt/decrypt pipelines we can support */
+#define FC_TLS_MAX_PIPELINES                    32
+#define FC_TLS_RT_MAX_MD_SIZE                   64
+#define FC_TLS_RT_MAX_CIPHER_BLOCK_SIZE         16
+#define FC_TLS_RT_MAX_ENCRYPTED_OVERHEAD        (256 + FC_TLS_RT_MAX_MD_SIZE)
+#define FC_TLS_RT_SEND_MAX_ENCRYPTED_OVERHEAD \
+        (FC_TLS_RT_MAX_CIPHER_BLOCK_SIZE + FC_TLS_RT_MAX_MD_SIZE)
+
+
 extern TLS_CTX *FCTLS_CTX_new(const TLS_METHOD *meth);
 extern void FCTLS_CTX_free(TLS_CTX *ctx);
 extern TLS *FCTLS_new(TLS_CTX *ctx);

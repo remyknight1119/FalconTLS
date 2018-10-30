@@ -5,8 +5,10 @@
 
 #include <falcontls/tls.h>
 #include <falcontls/types.h>
+#include <falcontls/buffer.h>
 
 #include "record_locl.h"
+#include "statem.h"
 
 #define TLS_RANDOM_SIZE                     32
 #define TLS_SESSION_ID_SIZE                 32
@@ -68,18 +70,23 @@ struct _server_hello_t {
 typedef struct _server_hello_t server_hello_t;
 
 struct tls_t {
+    TLS_STATEM                  tls_statem;
     bool                        tls_server;
     const TLS_METHOD            *tls_method;
     TLS_CTX                     *tls_ctx;
     FC_BIO                      *tls_rbio;
     FC_BIO                      *tls_wbio;
+    FC_BUF_MEM                  *tls_init_buf;
     int                         (*tls_handshake_func)(TLS *);
     uint32_t                    tls_version;
     int                         tls_fd;
+    RECORD_LAYER                tls_rlayer;
+    uint32_t                    tls_max_send_fragment;
 };
  
 struct tls_ctx_t {
     const TLS_METHOD            *sc_method;
+    uint32_t                    sc_max_send_fragment;
 }; 
 
 struct tls_method_t {

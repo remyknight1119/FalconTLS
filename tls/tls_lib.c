@@ -43,6 +43,7 @@ FCTLS_clear(TLS *s)
         return 0;
     }
 
+    tls_statem_clear(s);
     s->tls_version = s->tls_method->md_version;
     s->tls_method->md_tls_clear(s);
 
@@ -80,6 +81,8 @@ FCTLS_new(TLS_CTX *ctx)
         FC_LOG("TLS clear failed\n");
         goto err;
     }
+
+    s->tls_max_send_fragment = ctx->sc_max_send_fragment;
 
     return s;
 err:

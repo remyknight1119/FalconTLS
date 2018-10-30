@@ -13,5 +13,6 @@ typedef struct tls_method_t TLS_METHOD;
 
 typedef struct fc_bio_t FC_BIO;
 typedef struct fc_bio_method_t FC_BIO_METHOD;
+typedef struct fc_buf_mem_t FC_BUF_MEM;
 
 #endif

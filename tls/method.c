@@ -5,6 +5,6 @@
 
 IMPLEMENT_tls_meth_func(FC_TLS1_2_VERSION, 0, 0,
          FCTLS_method,                    
-         tls_statem_accept,            
-         tls_statem_connect, NULL)
+         tls12_statem_accept,            
+         tls12_statem_connect, NULL)
 
