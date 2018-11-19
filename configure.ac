@@ -26,7 +26,7 @@ fi
 
 LSSL=""
 AC_CHECK_LIB([crypto], [OPENSSL_config], , LSSL="no")
-AC_CHECK_LIB([ssl], [SSL_library_init], , LSSL="no")
+AC_CHECK_LIB([ssl], [SSL_new], , LSSL="no")
 if test "$LSSL" = "no"; then
     echo
     echo "   ERROR!  openssl library not found, go get it from"

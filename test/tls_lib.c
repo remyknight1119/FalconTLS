@@ -12,6 +12,7 @@
 
 static int fc_openssl_library_init(void);
 static void fc_openssl_add_all_algorighms(void);
+static void fc_openssl_load_error_strings(void);
 static void *fc_openssl_ctx_client_new(void);
 static void *fc_openssl_ctx_server_new(void);
 static int fc_openssl_ctx_use_certificate_file(void *ctx, const char *file);
@@ -55,7 +56,7 @@ const PROTO_SUITE fc_openssl_suite = {
     .ps_verify_mode = SSL_VERIFY_PEER,
     .ps_library_init = fc_openssl_library_init,
     .ps_add_all_algorithms = fc_openssl_add_all_algorighms,
-    .ps_load_error_strings = SSL_load_error_strings,
+    .ps_load_error_strings = fc_openssl_load_error_strings,
     .ps_ctx_client_new = fc_openssl_ctx_client_new,
     .ps_ctx_server_new = fc_openssl_ctx_server_new,
     .ps_ctx_use_certificate_file = fc_openssl_ctx_use_certificate_file,
@@ -109,8 +110,26 @@ fc_openssl_callback(int ok, X509_STORE_CTX *ctx)
 static int
 fc_openssl_library_init(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
+#else
+    if (OPENSSL_init_ssl(OPENSSL_INIT_LOAD_CONFIG, NULL) == 0) {
+        return FC_ERROR;
+    }
+
+#endif
     return FC_OK;
+}
+
+static void
+fc_openssl_load_error_strings(void)
+{
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    SSL_load_error_strings();
+#else
+    ERR_clear_error();
+#endif
+
 }
 
 static void
@@ -122,13 +141,21 @@ fc_openssl_add_all_algorighms(void)
 static void *
 fc_openssl_ctx_client_new(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     return SSL_CTX_new(TLSv1_2_client_method());
+#else
+    return SSL_CTX_new(TLS_client_method());
+#endif
 }
 
 static void *
 fc_openssl_ctx_server_new(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     return SSL_CTX_new(TLSv1_2_server_method());
+#else
+    return SSL_CTX_new(TLS_server_method());
+#endif
 }
 
 static int 
