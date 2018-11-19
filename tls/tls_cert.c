@@ -96,7 +96,7 @@ FCTLS_CTX_use_PrivateKey_file(TLS_CTX *ctx, const char *file,
     FC_BIO      *in = NULL;
     FC_EVP_PKEY *pkey = NULL;
 #endif
-    int         ret = 0;
+    int         ret = 1;
     
 #if 0
     in = FC_BIO_new(FC_BIO_s_file());

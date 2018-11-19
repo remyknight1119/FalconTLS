@@ -3,7 +3,7 @@
 set -e
 dir=`dirname $0`
 sample=$1
-port=443
+port=448
 cert=pem/ser_cacert.pem,pem/cli_cacert.pem
 key=pem/ser_privkey.pem,pem/cli_privkey.pem
 cd $dir
