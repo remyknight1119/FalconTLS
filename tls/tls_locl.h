@@ -9,6 +9,7 @@
 
 #include "record_locl.h"
 #include "statem.h"
+#include "tls1_2.h"
 
 #define TLS_RANDOM_SIZE                     32
 #define TLS_SESSION_ID_SIZE                 32
@@ -84,6 +85,17 @@ struct tls_t {
     uint32_t                    tls_max_send_fragment;
 };
  
+typedef struct tls_enc_method_t {
+    int         (*em_enc)(TLS *, TLS_RECORD *, uint32_t, int);
+    int         (*em_mac)(TLS *, TLS_RECORD *, uint8_t *, int);
+    int         (*em_set_handshake_header)(TLS *s, int type, ulong len);
+    int         (*em_do_write)(TLS *s);
+    /* Handshake header length */
+    uint32_t    em_hhlen;
+    uint32_t    em_enc_flags;
+} TLS_ENC_METHOD;
+
+
 struct tls_ctx_t {
     const TLS_METHOD            *sc_method;
     uint32_t                    sc_max_send_fragment;
@@ -120,7 +132,7 @@ struct tls_method_t {
     int                     (*md_num_ciphers) (void);
     //const TLS_CIPHER        *(*md_get_cipher) (unsigned ncipher);
     long                    (*md_get_timeout)(void);
-    //const TLS_ENC_METHOD    *md_enc; /* Extra TLS stuff */
+    const TLS_ENC_METHOD    *md_tls_enc; /* Extra TLS stuff */
     int                     (*md_tls_version) (void);
 };
 
@@ -137,6 +149,8 @@ static inline uint32_t get_len_3byte(uint8_t *len)
     return mlen.len32;
 }
 
+TLS_ENC_METHOD const TLSv1_2_enc_data;
+
 #define IMPLEMENT_tls_meth_func(version, flags, mask, func_name, s_accept, \
                                  s_connect, enc_data) \
 const TLS_METHOD *func_name(void)  \
@@ -147,10 +161,15 @@ const TLS_METHOD *func_name(void)  \
                 .md_mask = mask,  \
                 .md_tls_accept = s_accept, \
                 .md_tls_connect = s_connect, \
+                .md_tls_new = tls1_2_new, \
+                .md_tls_clear = tls1_2_clear, \
+                .md_tls_free = tls1_2_free, \
+                .md_tls_enc = enc_data, \
         }; \
         return &func_name##_data; \
         }
 
 
+int tls1_2_handshake_write(TLS *s);
 
 #endif

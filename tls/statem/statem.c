@@ -23,6 +23,12 @@ tls_statem_clear(TLS *s)
     s->tls_statem.sm_in_init = 1;
 }
 
+static int
+statem_do_write(TLS *s)
+{
+    return s->tls_method->md_tls_enc->em_do_write(s);
+}
+
 static void
 init_read_state_machine(TLS *s)
 {
@@ -49,10 +55,10 @@ static SUB_STATE_RETURN
 write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
 {
     TLS_STATEM  *st = &s->tls_statem;
-    //int         ret = 0;
+    int         ret = 0;
 
     while (1) {
-        switch (st->sm_write_state_work) {
+        switch (st->sm_write_state) {
             case WRITE_STATE_TRANSITION:
                 switch (write->ws_transition(s)) {
                     case WRITE_TRAN_CONTINUE:
@@ -85,6 +91,12 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                 }
  
             case WRITE_STATE_SEND:
+                ret = statem_do_write(s);
+                if (ret <= 0) {
+                    return SUB_STATE_ERROR;
+                }
+                st->sm_write_state = WRITE_STATE_POST_WORK;
+                st->sm_write_state_work = WORK_MORE_A;
             case WRITE_STATE_POST_WORK:
                 break;
             default:
