@@ -52,5 +52,12 @@ tls1_2_peek(TLS *s, void *buf, int len)
 int
 tls1_2_handshake_write(TLS *s)
 {
+    size_t written = 0;
+    ret = ssl3_write_bytes(s, type, &s->init_buf->data[s->init_off],
+            s->init_num, &written);
+    FC_LOG("in\n");
+
+    s->init_off += written;
+    s->init_num -= written;
     return 0;
 }
