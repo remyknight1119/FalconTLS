@@ -81,6 +81,8 @@ struct tls_t {
     int                         (*tls_handshake_func)(TLS *);
     uint32_t                    tls_version;
     int                         tls_fd;
+    int                         tls_init_off;
+    int                         tls_init_num;
     RECORD_LAYER                tls_rlayer;
     uint32_t                    tls_max_send_fragment;
 };
@@ -171,5 +173,6 @@ const TLS_METHOD *func_name(void)  \
 
 
 int tls1_2_handshake_write(TLS *s);
+int tls_do_write(TLS *s, int type);
 
 #endif

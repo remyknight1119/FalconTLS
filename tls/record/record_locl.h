@@ -107,13 +107,11 @@ typedef struct record_layer_t {
     TLS_BUFFER      rl_wbuf[FC_TLS_MAX_PIPELINES];
     /* each decoded record goes in here */
     TLS_RECORD      rl_rrec[FC_TLS_MAX_PIPELINES];
-    uint32_t        rl_numrpipes;
-    uint32_t        rl_numwpipes;
-    uint32_t        rl_packet_length;
+    size_t          rl_numrpipes;
+    size_t          rl_numwpipes;
+    size_t          rl_packet_length;
     /* number of bytes sent so far */
-    uint32_t        rl_wnum;
-    uint8_t         rl_alert_fragment[2];
-    uint32_t        rl_alert_fragment_len;
+    size_t          rl_wnum;
     /* Count of the number of consecutive warning alerts received */
     uint32_t        rl_alert_count;
     uint8_t         rl_handshake_fragment[4];
@@ -128,9 +126,9 @@ typedef struct record_layer_t {
      */
     int             rl_read_ahead;
     /* number bytes written */
-    int             rl_wpend_tot;
+    size_t          rl_wpend_tot;
     int             rl_wpend_type;
-    int             rl_wpend_ret;
+    size_t          rl_wpend_ret;
 } RECORD_LAYER;
 
 #define TLS_RECORD_get_type(r)                 ((r)->rd_type)

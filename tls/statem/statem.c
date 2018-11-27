@@ -54,8 +54,10 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
 static SUB_STATE_RETURN
 write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
 {
-    TLS_STATEM  *st = &s->tls_statem;
-    int         ret = 0;
+    TLS_STATEM              *st = &s->tls_statem;
+    construct_message_f     confunc = NULL;
+    int                     mt = 0;
+    int                     ret = 0;
 
     while (1) {
         switch (st->sm_write_state) {
@@ -89,7 +91,12 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                     case WORK_FINISHED_STOP:
                         return SUB_STATE_END_HANDSHAKE;
                 }
- 
+
+                if (write->ws_get_construct_message(s, &confunc,
+                            &mt) < 0) {
+                    return SUB_STATE_ERROR;
+                }
+
             case WRITE_STATE_SEND:
                 ret = statem_do_write(s);
                 if (ret <= 0) {

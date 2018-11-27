@@ -119,6 +119,13 @@ typedef enum {
     WRITE_STATE_POST_WORK
 } WRITE_STATE;
 
+typedef int (*construct_message_f)(TLS *s, WPACKET *pkt);
+
+typedef struct tls_construct_message_t {
+    TLS_HANDSHAKE_STATE     cm_hand_state;
+    int                     cm_message_type;
+    construct_message_f     cm_construct;
+} TLS_CONSTRUCT_MESSAGE;
 
 typedef struct tls_statem_t {
     MSG_FLOW_STATE      sm_state;
@@ -138,10 +145,11 @@ typedef struct tls_read_statem_t {
 } TLS_READ_STATEM;
 
 typedef struct tls_write_statem_t {
-    WRITE_TRAN      (*ws_transition)(TLS *s);
-    WORK_STATE      (*ws_pre_work)(TLS *s);
-    WORK_STATE      (*ws_post_work)(TLS *s);
-    int             (*ws_construct_message)(TLS *s, WPACKET *pkt);
+    WRITE_TRAN              (*ws_transition)(TLS *s);
+    WORK_STATE              (*ws_pre_work)(TLS *s);
+    WORK_STATE              (*ws_post_work)(TLS *s);
+    int                     (*ws_get_construct_message)(TLS *s,
+                                construct_message_f *func, int *m_type);
 } TLS_WRITE_STATEM;
 
 TLS_READ_STATEM tls12_client_read_statem_proc;
@@ -150,6 +158,8 @@ TLS_READ_STATEM tls12_server_read_statem_proc;
 TLS_WRITE_STATEM tls12_server_write_statem_proc;
 
 void tls_statem_clear(TLS *s);
+int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
+        int *m_type, TLS_CONSTRUCT_MESSAGE *array, size_t size);
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
 int TLS_in_init(TLS *s);

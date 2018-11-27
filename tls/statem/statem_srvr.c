@@ -19,13 +19,14 @@ TLS_READ_STATEM tls12_server_read_statem_proc = {
 static WRITE_TRAN fctls12_statem_server_write_transition(TLS *s);
 static WORK_STATE fctls12_statem_server_write_pre_work(TLS *s);
 static WORK_STATE fctls12_statem_server_write_post_work(TLS *s);
-static int fctls12_statem_server_construct_message(TLS *s, WPACKET *pkt);
+static int fctls12_statem_server_construct_message(TLS *s,
+            construct_message_f *func, int *m_type);
 
 TLS_WRITE_STATEM tls12_server_write_statem_proc = {
     .ws_transition = fctls12_statem_server_write_transition,
     .ws_pre_work = fctls12_statem_server_write_pre_work,
     .ws_post_work = fctls12_statem_server_write_post_work,
-    .ws_construct_message = fctls12_statem_server_construct_message,
+    .ws_get_construct_message = fctls12_statem_server_construct_message,
 };
 
 static int
@@ -65,7 +66,8 @@ fctls12_statem_server_write_post_work(TLS *s)
 }
 
 static int
-fctls12_statem_server_construct_message(TLS *s, WPACKET *pkt)
+fctls12_statem_server_construct_message(TLS *s, construct_message_f *func,
+                int *m_type)
 {
     return 1;
 }

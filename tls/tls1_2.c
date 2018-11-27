@@ -1,9 +1,11 @@
 #include <falcontls/tls.h>
+#include <falcontls/tls1_2.h>
 #include <falcontls/crypto.h>
 #include <falcontls/bio.h>
 #include <fc_log.h>
 
 #include "tls_locl.h"
+#include "record.h"
 
 TLS_ENC_METHOD const TLSv1_2_enc_data = {
     .em_do_write = tls1_2_handshake_write,
@@ -52,12 +54,5 @@ tls1_2_peek(TLS *s, void *buf, int len)
 int
 tls1_2_handshake_write(TLS *s)
 {
-    size_t written = 0;
-    ret = ssl3_write_bytes(s, type, &s->init_buf->data[s->init_off],
-            s->init_num, &written);
-    FC_LOG("in\n");
-
-    s->init_off += written;
-    s->init_num -= written;
-    return 0;
+    return tls_do_write(s, TLS1_2_RT_HANDSHAKE);
 }
