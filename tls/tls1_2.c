@@ -8,6 +8,7 @@
 #include "record.h"
 
 TLS_ENC_METHOD const TLSv1_2_enc_data = {
+    .em_set_handshake_header = tls1_set_handshake_header,
     .em_do_write = tls1_2_handshake_write,
 };
 

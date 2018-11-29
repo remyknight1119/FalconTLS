@@ -80,7 +80,7 @@ struct tls_t {
     FC_BIO                      *tls_wbio;
     FC_BUF_MEM                  *tls_init_buf;
     int                         (*tls_handshake_func)(TLS *);
-    uint32_t                    tls_version;
+    uint16_t                    tls_version;
     int                         tls_fd;
     int                         tls_init_off;
     int                         tls_init_num;
@@ -105,7 +105,7 @@ struct tls_ctx_t {
 }; 
 
 struct tls_method_t {
-    uint32_t                md_version;
+    uint16_t                md_version;
     unsigned                md_flags;
     ulong                   md_mask;
     int                     (*md_tls_new)(TLS *s);
@@ -173,6 +173,7 @@ const TLS_METHOD *func_name(void)  \
         }
 
 
+int tls1_set_handshake_header(TLS *s, WPACKET *pkt, int mt);
 int tls1_2_handshake_write(TLS *s);
 int tls_do_write(TLS *s, int type);
 
