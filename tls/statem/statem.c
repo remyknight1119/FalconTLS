@@ -4,6 +4,7 @@
 
 #include "statem.h"
 #include "tls_locl.h"
+#include "handshake.h"
 
 /* Sub state machine return values */
 typedef enum {
@@ -56,6 +57,7 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
 {
     TLS_STATEM              *st = &s->tls_statem;
     construct_message_f     confunc = NULL;
+    WPACKET                 pkt = {};
     int                     mt = 0;
     int                     ret = 0;
 
@@ -96,6 +98,16 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                             &mt) < 0) {
                     return SUB_STATE_ERROR;
                 }
+
+                if (WPACKET_init(&pkt, s->tls_init_buf) == 0) {
+                    return SUB_STATE_ERROR;
+                }
+
+                if (confunc != NULL && confunc(s, &pkt) == 0) {
+                    return SUB_STATE_ERROR;
+                }
+
+                tls_set_handshake_header(s, &pkt, mt);
 
             case WRITE_STATE_SEND:
                 ret = statem_do_write(s);

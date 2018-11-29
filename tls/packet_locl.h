@@ -35,4 +35,6 @@ typedef struct wpacket_t {
     size_t          wk_maxsize;
 } WPACKET;
 
+int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf);
+
 #endif

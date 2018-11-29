@@ -16,7 +16,7 @@ tls_setup_read_buffer(TLS *s)
 
     b = RECORD_LAYER_get_rbuf(&s->tls_rlayer);
 
-    headerlen = FC_TLS_RT_HEADER_LENGTH;
+    headerlen = TLS_RT_HEADER_LENGTH;
     if (b->bf_buf == NULL) {
         len = FC_TLS_RT_MAX_PLAIN_LENGTH + FC_TLS_RT_MAX_ENCRYPTED_OVERHEAD +
             headerlen;
@@ -48,7 +48,7 @@ tls_setup_write_buffer(TLS *s, uint32_t numwpipes, size_t len)
 
     s->tls_rlayer.rl_numwpipes = numwpipes;
     if (len == 0) {
-        headerlen = FC_TLS_RT_HEADER_LENGTH;
+        headerlen = TLS_RT_HEADER_LENGTH;
         len = s->tls_max_send_fragment + FC_TLS_RT_SEND_MAX_ENCRYPTED_OVERHEAD +
             headerlen;
     }

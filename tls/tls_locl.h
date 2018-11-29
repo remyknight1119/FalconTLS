@@ -8,6 +8,7 @@
 #include <falcontls/buffer.h>
 
 #include "record_locl.h"
+#include "packet_locl.h"
 #include "statem.h"
 #include "tls1_2.h"
 
@@ -90,7 +91,7 @@ struct tls_t {
 typedef struct tls_enc_method_t {
     int         (*em_enc)(TLS *, TLS_RECORD *, uint32_t, int);
     int         (*em_mac)(TLS *, TLS_RECORD *, uint8_t *, int);
-    int         (*em_set_handshake_header)(TLS *s, int type, ulong len);
+    int         (*em_set_handshake_header)(TLS *s, WPACKET *pkt, int mt);
     int         (*em_do_write)(TLS *s);
     /* Handshake header length */
     uint32_t    em_hhlen;

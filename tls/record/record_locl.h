@@ -170,7 +170,7 @@ struct _record_t {
 
 typedef struct _record_t record_t;
 
-#define FC_TLS_RT_HEADER_LENGTH sizeof(record_t)
+#define TLS_RT_HEADER_LENGTH    sizeof(record_t)
 
 int tls_setup_buffers(TLS *s);
 int tls12_read_bytes(TLS *s, int type, int *recvd_type,
