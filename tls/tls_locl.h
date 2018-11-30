@@ -15,7 +15,6 @@
 #define TLS_RANDOM_SIZE                     32
 #define TLS_SESSION_ID_SIZE                 32
 #define TLS_MASTER_SECRET_SIZE              48
-#define TLS_HM_HEADER_LENGTH                4
 
 #define TLS_RT_CHANGE_CIPHER_SPEC           20
 #define TLS_RT_ALERT                        21
@@ -38,38 +37,20 @@
 #define TLS_MT_FINISHED                 20
 #define TLS_MT_KEY_UPDATE               24
 
-typedef struct _handshake_t {
-    uint8_t     hs_type;
-    uint8_t     hs_len[3];
-} handshake_t;
+#define n2s(c,s)        ((s=(((uint32_t)((c)[0]))<< 8)| \
+                             (((uint32_t)((c)[1]))    )),(c)+=2)
+#define s2n(s,c)        (((c)[0]=(uint8_t)(((s)>> 8)&0xff), \
+                           (c)[1]=(uint8_t)(((s)    )&0xff)),(c)+=2)
 
-typedef struct _random_t {
-    uint32_t    rm_unixt_time;
-    uint8_t     rm_random_bytes[FC_TLS_RANDOM_BYTES_LEN];
-} random_t;
+#define n2l3(c,l)       ((l =(((ulong)((c)[0]))<<16)| \
+                              (((ulong)((c)[1]))<< 8)| \
+                              (((ulong)((c)[2]))    )),(c)+=3)
 
-typedef struct _extension_t {
-    uint16_t    et_type;
-    uint16_t    et_length;
-} extension_t;
+#define l2n3(l,c)       (((c)[0]=(uint8_t)(((l)>>16)&0xff), \
+                           (c)[1]=(uint8_t)(((l)>> 8)&0xff), \
+                           (c)[2]=(uint8_t)(((l)    )&0xff)),(c)+=3)
 
-struct _client_hello_t {
-    version_t   ch_version;
-    random_t    ch_random;
-    uint8_t     ch_session_id_len;
-    uint8_t     ch_session_id[0];
-} __attribute__ ((__packed__));
 
-typedef struct _client_hello_t client_hello_t;
-
-struct _server_hello_t {
-    version_t       sh_version;
-    random_t        sh_random;
-    uint8_t         sh_session_id_len;
-    uint8_t         sh_session_id[0];
-} __attribute__ ((__packed__));
-
-typedef struct _server_hello_t server_hello_t;
 
 struct tls_t {
     TLS_STATEM                  tls_statem;
@@ -94,7 +75,7 @@ typedef struct tls_enc_method_t {
     int         (*em_set_handshake_header)(TLS *s, WPACKET *pkt, int mt);
     int         (*em_do_write)(TLS *s);
     /* Handshake header length */
-    uint32_t    em_hhlen;
+    size_t      em_hhlen;
     uint32_t    em_enc_flags;
 } TLS_ENC_METHOD;
 
@@ -173,7 +154,6 @@ const TLS_METHOD *func_name(void)  \
         }
 
 
-int tls1_set_handshake_header(TLS *s, WPACKET *pkt, int mt);
 int tls1_2_handshake_write(TLS *s);
 int tls_do_write(TLS *s, int type);
 

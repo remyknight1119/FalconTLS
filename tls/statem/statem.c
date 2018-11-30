@@ -99,7 +99,8 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                     return SUB_STATE_ERROR;
                 }
 
-                if (WPACKET_init(&pkt, s->tls_init_buf) == 0) {
+                if (WPACKET_init(&pkt, s->tls_init_buf,
+                            tls_hm_header_len(s)) == 0) {
                     return SUB_STATE_ERROR;
                 }
 

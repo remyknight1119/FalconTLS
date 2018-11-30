@@ -2,6 +2,7 @@
 #define __PACKET_LOCL_H__
 
 #include <falcontls/types.h>
+#include <internal/buffer.h>
 
 typedef struct {
     /* Pointer to where we are currently reading from */
@@ -35,6 +36,6 @@ typedef struct wpacket_t {
     size_t          wk_maxsize;
 } WPACKET;
 
-int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf);
+int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf, size_t hlen);
 
 #endif

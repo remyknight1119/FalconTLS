@@ -7,18 +7,13 @@
 #include "tls_locl.h"
 #include "record_locl.h"
  
-int
-tls1_set_handshake_header(TLS *s, WPACKET *pkt, int mt)
+void
+tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt)
 {
     record_t    *r = NULL;
 
-    r = (void *)pkt->wk_buf->bm_data;
+    r = record;
     r->rd_version.pv_version = htons(s->tls_version);
     r->rd_type = mt;
-    r->rd_len = htons(pkt->wk_written);
-
-    s->tls_init_num = (int)pkt->wk_written + TLS_RT_HEADER_LENGTH;
-    s->tls_init_off = 0;
-
-    return 1;
+    r->rd_len = htons(tot_len);
 }

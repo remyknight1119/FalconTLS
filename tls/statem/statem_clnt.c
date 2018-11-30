@@ -4,6 +4,7 @@
 
 #include "statem.h"
 #include "tls_locl.h"
+#include "handshake.h"
 
 static int fctls12_statem_client_read_transition(TLS *s);
 static MSG_PROCESS_RETURN fctls12_statem_client_process_message(TLS *s,
@@ -110,7 +111,19 @@ fctls12_statem_get_client_construct_message(TLS *s, construct_message_f *func,
 static int
 tls_construct_client_hello(TLS *s, WPACKET *pkt)
 {
+    client_hello_t  *ch = NULL;
+    unsigned char   *p = NULL;
+    int             len = 0;
+
     FC_LOG("in\n");
+    ch = (void *)&pkt->wk_buf->bm_data[pkt->wk_curr];
+    ch->ch_version = htons(s->tls_version);
+    
+    p = (void *)(ch + 1);
+
+    len = p - (unsigned char *)ch;
+    pkt->wk_written = len;
+
     return 1;
 }
 
