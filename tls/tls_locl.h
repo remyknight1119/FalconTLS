@@ -156,5 +156,6 @@ const TLS_METHOD *func_name(void)  \
 
 int tls1_2_handshake_write(TLS *s);
 int tls_do_write(TLS *s, int type);
+void tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt);
 
 #endif
