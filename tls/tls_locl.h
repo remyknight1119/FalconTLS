@@ -120,18 +120,18 @@ struct tls_method_t {
     int                     (*md_tls_version) (void);
 };
 
-static inline uint32_t get_len_3byte(uint8_t *len)
-{
-    union {
-        uint32_t    len32;
-        uint8_t     len8[4];
-    } mlen;
+#define TLS_CIPHER_LEN  2
 
-    mlen.len8[0] = 0;
-    memcpy(&mlen.len8[1], len, 3*sizeof(*len));
-
-    return mlen.len32;
-}
+struct tls_cipher_t {
+    const char      *cp_name;           /* text name */
+    uint32_t        cp_id;                /* id, 4 bytes, first is version */
+    uint32_t        cp_algorithm_mkey;    /* key exchange algorithm */
+    uint32_t        cp_algorithm_auth;    /* server authentication */
+    uint32_t        cp_algorithm_enc;     /* symmetric encryption */
+    uint32_t        cp_algorithm_mac;     /* symmetric authentication */
+    uint32_t        cp_alg_bits;          /* Number of bits for algorithm */
+    int             cp_strength_bits;     /* Number of bits really used */
+};
 
 TLS_ENC_METHOD const TLSv1_2_enc_data;
 

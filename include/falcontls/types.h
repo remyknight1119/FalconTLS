@@ -10,6 +10,7 @@ typedef unsigned long ulong;
 typedef struct tls_ctx_t TLS_CTX;
 typedef struct tls_t TLS;
 typedef struct tls_method_t TLS_METHOD;
+typedef struct tls_cipher_t TLS_CIPHER;
 
 typedef struct fc_bio_t FC_BIO;
 typedef struct fc_bio_method_t FC_BIO_METHOD;
