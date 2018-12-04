@@ -5,12 +5,13 @@
 
 #include "tls_locl.h"
 #include "statem.h"
-
+#include "cipher.h"
 
 TLS_CTX *
 FCTLS_CTX_new(const TLS_METHOD *meth)
 {
     TLS_CTX    *ctx = NULL;
+    int         num = 0;
 
     ctx = FALCONTLS_calloc(sizeof(*ctx));
     if (ctx == NULL) {
@@ -20,10 +21,17 @@ FCTLS_CTX_new(const TLS_METHOD *meth)
 
     ctx->sc_method = meth;
 
+    if (!tls_create_cipher_list(ctx->sc_method, &ctx->sc_cipher_list,
+                &ctx->sc_cipher_list_by_id, ctx->sc_cert) ||
+            (num = sk_TLS_CIPHER_num(ctx->sc_cipher_list)) <= 0) {
+        FC_LOG("Create cipher list failed(num = %d)!\n", num);
+        goto err;
+    }
+
     return ctx;
-//err:
-    //FCTLS_CTX_free(ctx);
-    //return NULL;
+err:
+    FCTLS_CTX_free(ctx);
+    return NULL;
 }
 
 void 
@@ -275,6 +283,44 @@ FCTLS_init(void)
 void
 FalconTLS_add_all_algorighms(void)
 {
+}
+
+FC_STACK_OF(TLS_CIPHER) *
+FCTLS_get_ciphers(const TLS *s)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+
+    if (s->tls_cipher_list != NULL) {
+        return (s->tls_cipher_list);
+    } 
+    
+    if ((s->tls_ctx != NULL) && (s->tls_ctx->sc_cipher_list != NULL)) {
+        return (s->tls_ctx->sc_cipher_list);
+    }
+
+    return (NULL);
+}
+
+/** return a STACK of the ciphers available for the SSL and in order of
+ * algorithm id */
+FC_STACK_OF(TLS_CIPHER) *
+tls_get_ciphers_by_id(TLS *s)
+{
+    if (s == NULL) {
+        return NULL;
+    }
+
+    if (s->tls_cipher_list_by_id != NULL) {
+        return (s->tls_cipher_list_by_id);
+    } 
+    
+    if ((s->tls_ctx != NULL) && (s->tls_ctx->sc_cipher_list_by_id != NULL)) {
+        return (s->tls_ctx->sc_cipher_list_by_id);
+    }
+
+    return NULL;
 }
 
 

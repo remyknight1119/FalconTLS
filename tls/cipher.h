@@ -1,6 +1,8 @@
 #ifndef __FC_CIPHER_H__
 #define __FC_CIPHER_H__
 
+#include <falcontls/types.h>
+
 /* CCM ciphersuites from RFC7251 */
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_128_CCM            0x0300C0AC
 #define TLS1_CK_ECDHE_ECDSA_WITH_AES_256_CCM            0x0300C0AD
@@ -105,4 +107,8 @@
 #define TLS_AEAD                0x0000004U
 
 
+FC_STACK_OF(TLS_CIPHER) *tls_create_cipher_list(const TLS_METHOD *method,
+                        FC_STACK_OF(TLS_CIPHER) 
+                        **cipher_list, FC_STACK_OF(TLS_CIPHER) 
+                        **cipher_list_by_id, CERT *c);
 #endif

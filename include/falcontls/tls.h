@@ -2,6 +2,7 @@
 #define __FC_TLS_H__
 
 #include <falcontls/types.h>
+#include <falcontls/safestack.h>
 
 #define FC_TLS1_2_VERSION                   0x0303
 #define FC_TLS1_3_VERSION                   0x0304
@@ -21,6 +22,7 @@
 #define FC_TLS_RT_SEND_MAX_ENCRYPTED_OVERHEAD \
         (FC_TLS_RT_MAX_CIPHER_BLOCK_SIZE + FC_TLS_RT_MAX_MD_SIZE)
 
+FC_DEFINE_STACK_OF_CONST(TLS_CIPHER)
 
 extern TLS_CTX *FCTLS_CTX_new(const TLS_METHOD *meth);
 extern void FCTLS_CTX_free(TLS_CTX *ctx);
@@ -44,5 +46,6 @@ extern int FCTLS_shutdown(TLS *s);
 extern int FCTLS_init(void);
 extern void FalconTLS_add_all_algorighms(void);
 extern const TLS_METHOD *FCTLS_method(void);
+extern FC_STACK_OF(TLS_CIPHER) *FCTLS_get_ciphers(const TLS *s);
 
 #endif

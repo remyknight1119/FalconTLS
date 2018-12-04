@@ -109,21 +109,98 @@ fctls12_statem_get_client_construct_message(TLS *s, construct_message_f *func,
 }
 
 static int
+tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
+{
+    const TLS_CIPHER    *c = NULL;
+    uint8_t             *q = NULL;
+    int                 i = 0;
+    int                 j = 0;
+    /* Set disabled masks for this session */
+    //ssl_set_client_disabled(s);
+
+    if (sk == NULL) {
+        return 0;
+    }
+
+    q = p;
+
+    for (i = 0; i < sk_TLS_CIPHER_num(sk); i++) {
+        c = sk_TLS_CIPHER_value(sk, i);
+        j = s->tls_method->md_put_cipher_by_char(c, p);
+        p += j;
+    }
+    /*
+     * If p == q, no ciphers; caller indicates an error. Otherwise, add
+     * applicable SCSVs.
+     */
+    if (p != q) {
+#if 0
+        if (s->mode & TLS_MODE_SEND_FALLBACK_SCSV) {
+            static TLS_CIPHER scsv = {
+                0, NULL, TLS_CK_FALLBACK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            };
+            j = s->method->put_cipher_by_char(&scsv, p);
+            p += j;
+        }
+#endif
+    }
+
+    return (p - q);
+}
+
+static int
 tls_construct_client_hello(TLS *s, WPACKET *pkt)
 {
     client_hello_t  *ch = NULL;
     unsigned char   *p = NULL;
+    int             i = 0;
     int             len = 0;
 
     FC_LOG("in\n");
     ch = (void *)&pkt->wk_buf->bm_data[pkt->wk_curr];
-    ch->ch_version = htons(s->tls_version);
+    ch->ch_version = FC_HTONS(s->tls_version);
     
     p = (void *)(ch + 1);
+
+    /* Ciphers supported */
+    i = tls_cipher_list_to_bytes(s, FCTLS_get_ciphers(s), &(p[2]));
+    if (i == 0) {
+        goto err;
+    }
+#if 0
+    /*
+     * Some servers hang if client hello > 256 bytes as hack workaround
+     * chop number of supported ciphers to keep it well below this if we
+     * use TLS v1.2
+     */
+    if (TLS1_get_version(s) >= TLS1_2_VERSION
+        && i > OPENTLS_MAX_TLS1_2_CIPHER_LENGTH)
+        i = OPENTLS_MAX_TLS1_2_CIPHER_LENGTH & ~1;
+#endif
+    s2n(i, p);
+    p += i;
+
+    *(p++) = 1;
+    *(p++) = 0;                 /* Add the NULL method */
+
+#if 0
+    /* TLS extensions */
+    if (ssl_prepare_clienthello_tlsext(s) <= 0) {
+        goto err;
+    }
+    if ((p =
+         ssl_add_clienthello_tlsext(s, p, buf + TLS_RT_MAX_PLAIN_LENGTH,
+                                    &al)) == NULL) {
+        tls_send_alert(s, TLS_AL_FATAL, al);
+        goto err;
+    }
+#endif
 
     len = p - (unsigned char *)ch;
     pkt->wk_written = len;
 
     return 1;
+err:
+    return 0;
 }
 

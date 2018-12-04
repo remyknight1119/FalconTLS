@@ -2,6 +2,7 @@
 #include <falcontls/tls1_2.h>
 #include <falcontls/crypto.h>
 #include <falcontls/bio.h>
+#include <fc_lib.h>
 #include <fc_log.h>
 
 #include "tls_locl.h"
@@ -17,7 +18,7 @@ TLS_ENC_METHOD const TLSv1_2_enc_data = {
     .em_do_write = tls1_2_handshake_write,
 };
 
- TLS_CIPHER tls1_2_ciphers[] = {
+static TLS_CIPHER tls1_2_ciphers[] = {
     {
         .cp_name = TLS1_TXT_DHE_RSA_WITH_AES_128_GCM_SHA256,
         .cp_id = TLS1_CK_DHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -213,6 +214,64 @@ tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int mt)
     s->tls_init_off = 0;
 
     return 1;
+}
+
+int
+tls1_2_num_ciphers(void)
+{
+    return TLS1_2_NUM_CIPHERS;
+}
+
+const TLS_CIPHER *
+tls1_2_get_cipher(uint32_t u)
+{
+    if (u >= TLS1_2_NUM_CIPHERS) {
+        return NULL;
+    }
+
+    return (&(tls1_2_ciphers[TLS1_2_NUM_CIPHERS - 1 - u]));
+}
+
+static const TLS_CIPHER *
+tls1_2_search_cipher_byid(uint32_t id)
+{
+    const TLS_CIPHER    *cipher = NULL;
+    int                 i = 0;
+
+    for (i = 0; i < TLS1_2_NUM_CIPHERS; i++) {
+        cipher = &tls1_2_ciphers[i];
+        if (cipher->cp_id == id) {
+            return cipher;
+        }
+    }
+
+    FC_LOG("find cipher failed\n");
+    return NULL;
+}
+
+const TLS_CIPHER *
+tls1_2_get_cipher_by_char(const uint8_t *p)
+{
+    uint32_t    id = 0;
+
+    id = 0x03000000 | FC_NTOHS(*((uint16_t *)p));
+    return tls1_2_search_cipher_byid(id);
+}
+
+int 
+tls1_2_put_cipher_by_char(const TLS_CIPHER *c, uint8_t *p)
+{
+    uint32_t    l = 0;
+
+    if (p != NULL) {
+        l = c->cp_id;
+        if ((l & 0xFF000000) != 0x03000000) {
+            return (0);
+        }
+        *((uint16_t *)p) = FC_HTONS(l & 0xFFFF);
+    }
+
+    return (sizeof(uint16_t));
 }
 
 

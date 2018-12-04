@@ -6,6 +6,8 @@
 #include <falcontls/tls.h>
 #include <falcontls/types.h>
 #include <falcontls/buffer.h>
+#include <falcontls/safestack.h>
+#include <falcontls/evp.h>
 
 #include "record_locl.h"
 #include "packet_locl.h"
@@ -60,6 +62,8 @@ struct tls_t {
     FC_BIO                      *tls_rbio;
     FC_BIO                      *tls_wbio;
     FC_BUF_MEM                  *tls_init_buf;
+    FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list;
+    FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list_by_id;
     int                         (*tls_handshake_func)(TLS *);
     uint16_t                    tls_version;
     int                         tls_fd;
@@ -79,9 +83,22 @@ typedef struct tls_enc_method_t {
     uint32_t    em_enc_flags;
 } TLS_ENC_METHOD;
 
+typedef struct tls_cert_pkey_t {
+    //FC_X509                 *cp_x509;
+    //FC_EVP_PKEY             *cp_privatekey;
+    FC_STACK_OF(FC_X509)    *cp_chain;
+} CERT_PKEY;
+
+typedef struct tls_cert_t {
+    CERT_PKEY           *ct_key;
+    CERT_PKEY           ct_pkeys[FC_EVP_PKEY_NUM];
+} CERT;
 
 struct tls_ctx_t {
     const TLS_METHOD            *sc_method;
+    CERT                        *sc_cert;
+    FC_STACK_OF(TLS_CIPHER)     *sc_cipher_list;
+    FC_STACK_OF(TLS_CIPHER)     *sc_cipher_list_by_id;
     uint32_t                    sc_max_send_fragment;
 }; 
 
@@ -109,12 +126,12 @@ struct tls_method_t {
                                 void *parg);
     long                    (*md_tls_ctx_ctrl)(TLS_CTX *ctx, int cmd,
                                 long larg, void *parg);
-    //const TLS_CIPHER        *(*md_get_cipher_by_char)(const uint8_t *ptr);
-    //int                     (*md_put_cipher_by_char)(const TLS_CIPHER *cipher,
-    //                            uint8_t *ptr);
+    const TLS_CIPHER        *(*md_get_cipher_by_char)(const uint8_t *ptr);
+    int                     (*md_put_cipher_by_char)(const TLS_CIPHER *cipher,
+                                uint8_t *ptr);
     int                     (*md_tls_pending) (const TLS *s); 
     int                     (*md_num_ciphers) (void);
-    //const TLS_CIPHER        *(*md_get_cipher) (unsigned ncipher);
+    const TLS_CIPHER        *(*md_get_cipher) (unsigned ncipher);
     long                    (*md_get_timeout)(void);
     const TLS_ENC_METHOD    *md_tls_enc; /* Extra TLS stuff */
     int                     (*md_tls_version) (void);
@@ -137,25 +154,31 @@ TLS_ENC_METHOD const TLSv1_2_enc_data;
 
 #define IMPLEMENT_tls_meth_func(version, flags, mask, func_name, s_accept, \
                                  s_connect, enc_data) \
-const TLS_METHOD *func_name(void)  \
-        { \
+    const TLS_METHOD *func_name(void)  \
+    { \
         static const TLS_METHOD func_name##_data= { \
-                .md_version = version, \
-                .md_flags = flags, \
-                .md_mask = mask,  \
-                .md_tls_accept = s_accept, \
-                .md_tls_connect = s_connect, \
-                .md_tls_new = tls1_2_new, \
-                .md_tls_clear = tls1_2_clear, \
-                .md_tls_free = tls1_2_free, \
-                .md_tls_enc = enc_data, \
+            .md_version = version, \
+            .md_flags = flags, \
+            .md_mask = mask,  \
+            .md_tls_accept = s_accept, \
+            .md_tls_connect = s_connect, \
+            .md_tls_new = tls1_2_new, \
+            .md_tls_clear = tls1_2_clear, \
+            .md_tls_free = tls1_2_free, \
+            .md_num_ciphers = tls1_2_num_ciphers, \
+            .md_get_cipher = tls1_2_get_cipher, \
+            .md_get_cipher_by_char = tls1_2_get_cipher_by_char, \
+            .md_put_cipher_by_char = tls1_2_put_cipher_by_char, \
+            .md_tls_enc = enc_data, \
         }; \
         return &func_name##_data; \
-        }
+    }
 
 
 int tls1_2_handshake_write(TLS *s);
 int tls_do_write(TLS *s, int type);
 void tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt);
+FC_STACK_OF(TLS_CIPHER) *tls_get_ciphers_by_id(TLS *s);
+
 
 #endif
