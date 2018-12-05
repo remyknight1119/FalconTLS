@@ -12,7 +12,7 @@ tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt)
     record_t    *r = NULL;
 
     r = record;
-    r->rd_version.pv_version = FC_HTONS(s->tls_version);
+    r->rd_version.pv_version = FC_HTONS(0x301);
     r->rd_type = mt;
     r->rd_len = FC_HTONS(tot_len);
 }

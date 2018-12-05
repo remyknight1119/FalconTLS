@@ -26,7 +26,7 @@ tls_create_cipher_list(const TLS_METHOD *method, FC_STACK_OF(TLS_CIPHER)
         return (NULL);
     }
 
-    for (i = 0; i < num_of_ciphers; i++) {
+    for (i = num_of_ciphers - 1; i >= 0; i--) {
         ciph = method->md_get_cipher(i);
         if (ciph == NULL) {
             continue;

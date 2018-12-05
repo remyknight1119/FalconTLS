@@ -16,6 +16,10 @@ tls_do_write(TLS *s, int type)
         return -1;
     }
 
+    if (written == s->tls_init_num) {
+        return 1;
+    }
+
     s->tls_init_off += written;
     s->tls_init_num -= written;
     return 0;

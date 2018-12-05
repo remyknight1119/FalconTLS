@@ -38,3 +38,4 @@ missing
 ssl_test
 config.h.in~
 pem_test
+tls_client_test
