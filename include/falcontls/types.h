@@ -20,5 +20,7 @@ typedef struct fc_evp_cipher_t FC_EVP_CIPHER;
 typedef struct fc_evp_cipher_ctx_t FC_EVP_CIPHER_CTX;
 typedef struct fc_evp_md_t FC_EVP_MD;
 typedef struct fc_evp_md_ctx_t FC_EVP_MD_CTX;
+typedef struct fc_x509_t FC_X509;
+
 
 #endif

@@ -79,6 +79,7 @@ static TLS_CIPHER tls1_2_ciphers[] = {
         .cp_alg_bits = 256,
         .cp_strength_bits = 256,
     },
+#if 0
     {
         .cp_name = TLS1_TXT_DHE_RSA_WITH_CHACHA20_POLY1305,
         .cp_id = TLS1_CK_DHE_RSA_WITH_CHACHA20_POLY1305,
@@ -129,7 +130,7 @@ static TLS_CIPHER tls1_2_ciphers[] = {
         .cp_alg_bits = 256,
         .cp_strength_bits = 256,
     },
- 
+#endif
     {
         .cp_name = TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305,
         .cp_id = TLS1_CK_ECDHE_RSA_WITH_CHACHA20_POLY1305,

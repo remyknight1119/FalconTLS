@@ -22,6 +22,31 @@
 #define FC_TLS_RT_SEND_MAX_ENCRYPTED_OVERHEAD \
         (FC_TLS_RT_MAX_CIPHER_BLOCK_SIZE + FC_TLS_RT_MAX_MD_SIZE)
 
+/* Extension context codes */ 
+/* This extension is only allowed in TLS */
+#define FC_TLS_EXT_TLS_ONLY                         0x0001
+/* This extension is only allowed in DTLS */
+#define FC_TLS_EXT_DTLS_ONLY                        0x0002
+/* Some extensions may be allowed in DTLS but we don't implement them for it */
+#define FC_TLS_EXT_TLS_IMPLEMENTATION_ONLY          0x0004
+/* Most extensions are not defined for SSLv3 but EXT_TYPE_renegotiate is */
+#define FC_TLS_EXT_SSL3_ALLOWED                     0x0008
+/* Extension is only defined for TLS1.2 and below */
+#define FC_TLS_EXT_TLS1_2_AND_BELOW_ONLY            0x0010
+/* Extension is only defined for TLS1.3 and above */
+#define FC_TLS_EXT_TLS1_3_ONLY                      0x0020
+/* Ignore this extension during parsing if we are resuming */
+#define FC_TLS_EXT_IGNORE_ON_RESUMPTION             0x0040
+#define FC_TLS_EXT_CLIENT_HELLO                     0x0080
+/* Really means TLS1.2 or below */
+#define FC_TLS_EXT_TLS1_2_SERVER_HELLO              0x0100
+#define FC_TLS_EXT_TLS1_3_SERVER_HELLO              0x0200
+#define FC_TLS_EXT_TLS1_3_ENCRYPTED_EXTENSIONS      0x0400
+#define FC_TLS_EXT_TLS1_3_HELLO_RETRY_REQUEST       0x0800
+#define FC_TLS_EXT_TLS1_3_CERTIFICATE               0x1000
+#define FC_TLS_EXT_TLS1_3_NEW_SESSION_TICKET        0x2000
+#define FC_TLS_EXT_TLS1_3_CERTIFICATE_REQUEST       0x4000
+
 FC_DEFINE_STACK_OF_CONST(TLS_CIPHER)
 
 extern TLS_CTX *FCTLS_CTX_new(const TLS_METHOD *meth);
