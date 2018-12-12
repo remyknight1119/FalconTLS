@@ -36,7 +36,31 @@ typedef struct wpacket_t {
     size_t          wk_maxsize;
 } WPACKET;
 
+int WPACKET_put_bytes__(WPACKET *pkt, unsigned int val, size_t bytes);
+
+/*
+ * Convenience macros for calling WPACKET_put_bytes with different
+ * lengths
+ */
+#define WPACKET_put_bytes_u8(pkt, val) \
+    WPACKET_put_bytes((pkt), (val), 1)
+#define WPACKET_put_bytes_u16(pkt, val) \
+    WPACKET_put_bytes((pkt), (val), 2)
+#define WPACKET_put_bytes_u24(pkt, val) \
+    WPACKET_put_bytes((pkt), (val), 3)
+#define WPACKET_put_bytes_u32(pkt, val) \
+    WPACKET_put_bytes((pkt), (val), 4)
+
+
 int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf, size_t hlen);
+
+/*
+ * Write the value stored in |val| into the WPACKET. The value will consume
+ * |bytes| amount of storage. An error will occur if |val| cannot be
+ * accommodated in |bytes| storage, e.g. attempting to write the value 256 into
+ * 1 byte will fail. Don't call this directly. Use the convenience macros below
+ * instead.
+ */
 int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size);
 
 #endif

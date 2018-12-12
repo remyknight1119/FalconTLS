@@ -1,6 +1,7 @@
 
 #include <falcontls/types.h>
 #include <falcontls/tls.h>
+#include <fc_lib.h>
 #include <fc_log.h>
 
 #include "tls_locl.h"
