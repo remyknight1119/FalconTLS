@@ -37,5 +37,6 @@ typedef struct wpacket_t {
 } WPACKET;
 
 int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf, size_t hlen);
+int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size);
 
 #endif

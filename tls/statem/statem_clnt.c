@@ -3,6 +3,7 @@
 #include <fc_log.h>
 
 #include "statem.h"
+#include "statem_locl.h"
 #include "tls_locl.h"
 #include "handshake.h"
 
@@ -148,18 +149,11 @@ tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
     return (p - q);
 }
 
-static unsigned char *
-tls_add_clienthello_tlsext(TLS *s, unsigned char *p, int *al)
-{
-    return p + 2;
-}
-
 static int
 tls_construct_client_hello(TLS *s, WPACKET *pkt)
 {
     client_hello_t  *ch = NULL;
     unsigned char   *p = NULL;
-    int             al = 0;
     int             i = 0;
     int             len = 0;
 
@@ -191,7 +185,8 @@ tls_construct_client_hello(TLS *s, WPACKET *pkt)
     *(p++) = 0;                 /* Add the NULL method */
 
     /* TLS extensions */
-    if ((p = tls_add_clienthello_tlsext(s, p, &al)) == NULL) {
+    if (tls_construct_extensions(s, pkt, FC_TLS_EXT_CLIENT_HELLO,
+                NULL, 0) == 0) {
         //tls_send_alert(s, TLS_AL_FATAL, al);
         goto err;
     }

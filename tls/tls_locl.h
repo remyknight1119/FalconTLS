@@ -71,6 +71,9 @@ struct tls_t {
     int                         tls_init_num;
     RECORD_LAYER                tls_rlayer;
     uint32_t                    tls_max_send_fragment;
+    struct {
+        int                     use_etm;
+    } tls_ext;
 };
  
 typedef struct tls_enc_method_t {
