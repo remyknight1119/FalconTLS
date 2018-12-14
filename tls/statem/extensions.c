@@ -14,6 +14,7 @@ typedef EXT_RETURN (*EXT_CONSTRUCT_F)(TLS *s, WPACKET *pkt, uint32_t context,
 static int init_etm(TLS *s, unsigned int context);
 static int init_ems(TLS *s, unsigned int context);
 static int final_ems(TLS *s, unsigned int context, int sent);
+static int final_ec_pt_formats(TLS *s, unsigned int context, int sent);
 
 typedef struct extensions_definition_t {
     uint32_t            ed_type;
@@ -30,6 +31,16 @@ typedef struct extensions_definition_t {
 
 
 static const EXTENSION_DEFINITION ext_defs[] = {
+    {
+        .ed_type = TLSEXT_TYPE_ec_point_formats,
+        .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_2_SERVER_HELLO
+            | FC_TLS_EXT_TLS1_2_AND_BELOW_ONLY,
+        .ed_parse_ctos = tls_parse_ctos_ec_pt_formats,
+        .ed_parse_stoc = tls_parse_stoc_ec_pt_formats,
+        .ed_construct_stoc = tls_construct_stoc_ec_pt_formats,
+        .ed_construct_ctos = tls_construct_ctos_ec_pt_formats,
+        .ed_final = final_ec_pt_formats,
+    },
     {
         .ed_type = TLSEXT_TYPE_encrypt_then_mac,
         .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_2_SERVER_HELLO
@@ -104,3 +115,10 @@ final_ems(TLS *s, unsigned int context, int sent)
 {
     return 1;
 }
+
+static int
+final_ec_pt_formats(TLS *s, unsigned int context, int sent)
+{
+    return 1;
+}
+

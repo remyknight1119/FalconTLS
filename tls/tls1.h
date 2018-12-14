@@ -24,6 +24,13 @@
 #define TLSEXT_TYPE_elliptic_curves             TLSEXT_TYPE_supported_groups
 #define TLSEXT_TYPE_ec_point_formats            11
 
+/* ECPointFormat values from RFC4492 */
+#define TLSEXT_ECPOINTFORMAT_first                      0
+#define TLSEXT_ECPOINTFORMAT_uncompressed               0
+#define TLSEXT_ECPOINTFORMAT_ansiX962_compressed_prime  1
+#define TLSEXT_ECPOINTFORMAT_ansiX962_compressed_char2  2
+#define TLSEXT_ECPOINTFORMAT_last                       2
+
 
 
 #endif

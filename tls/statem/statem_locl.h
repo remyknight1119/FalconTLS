@@ -22,6 +22,10 @@ int tls_parse_ctos_ems(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx);
 int tls_parse_stoc_ems(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx);
+int tls_parse_ctos_ec_pt_formats(TLS *s, PACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx);
+int tls_parse_stoc_ec_pt_formats(TLS *s, PACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx);
 int tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
                     FC_X509 *x, size_t chainidx);
 EXT_RETURN tls_construct_ctos_etm(TLS *s, WPACKET *pkt, uint32_t context,
@@ -32,5 +36,9 @@ EXT_RETURN tls_construct_stoc_ems(TLS *s, WPACKET *pkt, uint32_t context,
                     FC_X509 *x, size_t chainidx);
 EXT_RETURN tls_construct_ctos_ems(TLS *s, WPACKET *pkt, uint32_t context,
                     FC_X509 *x, size_t chainidx);
+EXT_RETURN tls_construct_stoc_ec_pt_formats(TLS *s, WPACKET *pkt,
+                    uint32_t context, FC_X509 *x, size_t chainidx);
+EXT_RETURN tls_construct_ctos_ec_pt_formats(TLS *s, WPACKET *pkt,
+                    uint32_t context, FC_X509 *x, size_t chainidx);
 
 #endif

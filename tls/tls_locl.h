@@ -148,6 +148,8 @@ struct tls_t {
     RECORD_LAYER                tls_rlayer;
     uint32_t                    tls_max_send_fragment;
     struct {
+        size_t                  ecpointformats_len;
+        unsigned char           *ecpointformats;
         int                     use_etm;
     } tls_ext;
 };
@@ -258,6 +260,7 @@ int tls1_2_handshake_write(TLS *s);
 int tls_do_write(TLS *s, int type);
 void tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt);
 FC_STACK_OF(TLS_CIPHER) *tls_get_ciphers_by_id(TLS *s);
-
+void tls1_get_formatlist(TLS *s, const unsigned char **pformats,
+                         size_t *num_formats);
 
 #endif
