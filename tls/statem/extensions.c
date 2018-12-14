@@ -35,8 +35,8 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_init = init_etm,
         .ed_parse_ctos = tls_parse_ctos_etm,
         .ed_parse_stoc = tls_parse_stoc_etm,
-        .ed_construct_ctos = tls_construct_stoc_etm,
-        .ed_construct_stoc = tls_construct_ctos_etm,
+        .ed_construct_stoc = tls_construct_stoc_etm,
+        .ed_construct_ctos = tls_construct_ctos_etm,
     },
 };
 
@@ -47,10 +47,17 @@ tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
         FC_X509 *x, size_t chainidx)
 {
     const EXTENSION_DEFINITION  *thisexd = NULL;
+    uint16_t                    *len = NULL;
+    size_t                      written = 0;
     EXT_CONSTRUCT_F             construct = NULL;
     EXT_RETURN                  ret = 0;
     int                         i = 0;
 
+    if (WPACKET_allocate_bytes(pkt, sizeof(*len), (unsigned char **)&len) == 0) {
+        return 0;
+    }
+
+    written = pkt->wk_written;
     for (i = 0, thisexd = ext_defs; i < EXTENSION_DEF_SIZE; i++, thisexd++) {
         construct = s->tls_server ? thisexd->ed_construct_stoc
                                   : thisexd->ed_construct_ctos;
@@ -59,6 +66,8 @@ tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
             return 0;
         }
     }
+
+    *len = FC_HTONS(pkt->wk_written - written);
 
     return 1;
 }

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 
 #include <falcontls/types.h>
 
@@ -77,6 +78,41 @@ WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size)
             || !put_value(data, val, size)) {
         return 0;
     }
+
+    return 1;
+}
+
+int
+WPACKET_memset(WPACKET *pkt, int ch, size_t len)
+{
+    unsigned char   *dest = NULL;
+
+    if (len == 0)
+        return 1;
+
+    if (!WPACKET_allocate_bytes(pkt, len, &dest)) {
+        return 0;
+    }
+
+    memset(dest, ch, len);
+
+    return 1;
+}
+
+int
+WPACKET_memcpy(WPACKET *pkt, const void *src, size_t len)
+{
+    unsigned char   *dest = NULL;
+
+    if (len == 0) {
+        return 1;
+    }
+
+    if (!WPACKET_allocate_bytes(pkt, len, &dest)) {
+        return 0;
+    }
+
+    memcpy(dest, src, len);
 
     return 1;
 }

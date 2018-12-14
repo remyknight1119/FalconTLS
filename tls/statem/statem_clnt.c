@@ -155,17 +155,20 @@ tls_construct_client_hello(TLS *s, WPACKET *pkt)
     client_hello_t  *ch = NULL;
     unsigned char   *p = NULL;
     int             i = 0;
-    int             len = 0;
 
     FC_LOG("in\n");
-    ch = (void *)&pkt->wk_buf->bm_data[pkt->wk_curr];
-    ch->ch_version = FC_HTONS(s->tls_version);
     
-    p = (void *)(ch + 1);
+    if (WPACKET_allocate_bytes(pkt, sizeof(*ch), (unsigned char **)&ch) == 0) {
+        FC_LOG("Err\n");
+        goto err;
+    }
 
+    ch->ch_version = FC_HTONS(s->tls_version);
+    p = (void *)(ch + 1);
     /* Ciphers supported */
     i = tls_cipher_list_to_bytes(s, FCTLS_get_ciphers(s), &(p[2]));
     if (i == 0) {
+        FC_LOG("Err\n");
         goto err;
     }
 #if 0
@@ -178,21 +181,29 @@ tls_construct_client_hello(TLS *s, WPACKET *pkt)
         && i > OPENTLS_MAX_TLS1_2_CIPHER_LENGTH)
         i = OPENTLS_MAX_TLS1_2_CIPHER_LENGTH & ~1;
 #endif
-    s2n(i, p);
-    p += i;
+    if (WPACKET_put_bytes_u16(pkt, i) == 0) {
+        FC_LOG("Err\n");
+        goto err;
+    }
 
-    *(p++) = 1;
-    *(p++) = 0;                 /* Add the NULL method */
+    if (WPACKET_allocate_bytes(pkt, i, NULL) == 0) {
+        FC_LOG("Err\n");
+        goto err;
+    }
+
+    if (!WPACKET_put_bytes_u8(pkt, 1)
+            || !WPACKET_put_bytes_u8(pkt, 0)) {
+        FC_LOG("Err\n");
+        goto err;
+    }
 
     /* TLS extensions */
     if (tls_construct_extensions(s, pkt, FC_TLS_EXT_CLIENT_HELLO,
                 NULL, 0) == 0) {
         //tls_send_alert(s, TLS_AL_FATAL, al);
+        FC_LOG("Err\n");
         goto err;
     }
-
-    len = p - (unsigned char *)ch;
-    pkt->wk_written = len;
 
     return 1;
 err:

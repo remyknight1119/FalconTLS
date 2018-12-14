@@ -36,7 +36,7 @@ typedef struct wpacket_t {
     size_t          wk_maxsize;
 } WPACKET;
 
-int WPACKET_put_bytes__(WPACKET *pkt, unsigned int val, size_t bytes);
+int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t bytes);
 
 /*
  * Convenience macros for calling WPACKET_put_bytes with different
@@ -62,5 +62,8 @@ int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf, size_t hlen);
  * instead.
  */
 int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size);
+int WPACKET_memset(WPACKET *pkt, int ch, size_t len);
+int WPACKET_memcpy(WPACKET *pkt, const void *src, size_t len);
+int WPACKET_allocate_bytes(WPACKET *pkt, size_t len, unsigned char **allocbytes);
 
 #endif
