@@ -150,6 +150,8 @@ struct tls_t {
     struct {
         size_t                  ecpointformats_len;
         unsigned char           *ecpointformats;
+        size_t                  supportedgroups_len;
+        uint16_t                *supportedgroups;
         int                     use_etm;
     } tls_ext;
 };
@@ -262,5 +264,7 @@ void tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt);
 FC_STACK_OF(TLS_CIPHER) *tls_get_ciphers_by_id(TLS *s);
 void tls1_get_formatlist(TLS *s, const unsigned char **pformats,
                          size_t *num_formats);
+void tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
+                        size_t *pgroupslen);
 
 #endif

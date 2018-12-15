@@ -32,5 +32,10 @@
 #define TLSEXT_ECPOINTFORMAT_last                       2
 
 
+#define TLSEXT_ECCURVE_X25519           29
+#define TLSEXT_ECCURVE_SECP256R1        23
+#define TLSEXT_ECCURVE_X448             30
+#define TLSEXT_ECCURVE_SECP521r1        25
+#define TLSEXT_ECCURVE_SECP384r1        24
 
 #endif

@@ -101,4 +101,33 @@ tls_construct_ctos_ec_pt_formats(TLS *s, WPACKET *pkt, uint32_t context,
     return EXT_RETURN_SENT;
 }
 
+EXT_RETURN
+tls_construct_ctos_supported_groups(TLS *s, WPACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx)
+{
+    const uint16_t  *pgroups = NULL;
+    size_t          num_groups = 0;
+    size_t          i = 0;
+
+    if (!use_ecc(s)) {
+        return EXT_RETURN_NOT_SENT;
+    }
+
+    tls1_get_supported_groups(s, &pgroups, &num_groups);
+
+    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_supported_groups) ||
+            !WPACKET_put_bytes_u16(pkt, 2*(num_groups + 1)) ||
+            !WPACKET_put_bytes_u16(pkt, 2*num_groups)) {
+        return EXT_RETURN_FAIL;
+    }
+
+    for (i = 0; i < num_groups; i++) {
+        uint16_t ctmp = pgroups[i];
+        if (!WPACKET_put_bytes_u16(pkt, ctmp)) {
+            return EXT_RETURN_FAIL;
+        }
+    }
+    
+    return EXT_RETURN_SENT;
+}
 

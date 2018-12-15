@@ -13,6 +13,15 @@ static const unsigned char ecformats_default[] = {
     TLSEXT_ECPOINTFORMAT_ansiX962_compressed_char2
 };
 
+/* The default curves */
+static const uint16_t eccurves_default[] = {
+    TLSEXT_ECCURVE_X25519,
+    TLSEXT_ECCURVE_SECP256R1,
+    TLSEXT_ECCURVE_X448,
+    TLSEXT_ECCURVE_SECP521r1,
+    TLSEXT_ECCURVE_SECP384r1,
+};
+
 void
 tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt)
 {
@@ -40,4 +49,15 @@ tls1_get_formatlist(TLS *s, const unsigned char **pformats,
     }
 }
 
-
+void
+tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
+        size_t *pgroupslen)
+{
+    if (s->tls_ext.supportedgroups == NULL) {
+        *pgroups = eccurves_default;
+        *pgroupslen = FC_ARRAY_SIZE(eccurves_default);
+    } else {
+        *pgroups = s->tls_ext.supportedgroups;
+        *pgroupslen = s->tls_ext.supportedgroups_len;
+    }
+}
