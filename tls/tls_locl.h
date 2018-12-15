@@ -144,7 +144,8 @@ struct tls_t {
     uint16_t                    tls_version;
     int                         tls_fd;
     int                         tls_init_off;
-    int                         tls_init_num;
+    void                        *tls_init_msg;
+    size_t                      tls_init_num;
     RECORD_LAYER                tls_rlayer;
     uint32_t                    tls_max_send_fragment;
     struct {

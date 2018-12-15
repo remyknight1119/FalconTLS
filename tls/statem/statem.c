@@ -49,6 +49,29 @@ init_write_state_machine(TLS *s)
 static SUB_STATE_RETURN
 read_state_machine(TLS *s, TLS_READ_STATEM *read)
 {
+    TLS_STATEM          *st = &s->tls_statem;
+    int                 mt = 0;
+    int                 ret = 0;
+
+    while (1) {
+        switch (st->sm_read_state) {
+        case READ_STATE_HEADER:
+            FC_LOG("header!\n");
+            ret = tls_get_message_header(s, &mt);
+            if (ret == 0) {
+                return SUB_STATE_ERROR;
+            }
+
+            break;
+        case READ_STATE_BODY:
+            break;
+        case READ_STATE_POST_PROCESS:
+            break;
+        default:
+            break;
+        }
+    }
+ 
     return SUB_STATE_ERROR;
 }
 
@@ -113,11 +136,28 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
             case WRITE_STATE_SEND:
                 ret = statem_do_write(s);
                 if (ret <= 0) {
+                    FC_LOG("State error!\n");
                     return SUB_STATE_ERROR;
                 }
                 st->sm_write_state = WRITE_STATE_POST_WORK;
                 st->sm_write_state_work = WORK_MORE_A;
             case WRITE_STATE_POST_WORK:
+                switch (st->sm_write_state_work = write->ws_post_work(s)) {
+                    case WORK_ERROR:
+                        /* Fall through */
+                    case WORK_MORE_A:
+                    case WORK_MORE_B:
+                        FC_LOG("State error!\n");
+                        return SUB_STATE_ERROR;
+
+                    case WORK_FINISHED_CONTINUE:
+                        st->sm_write_state = WRITE_STATE_TRANSITION;
+                        break;
+
+                    case WORK_FINISHED_STOP:
+                        return SUB_STATE_END_HANDSHAKE;
+                }
+
                 break;
             default:
                 return SUB_STATE_ERROR;

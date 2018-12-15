@@ -71,6 +71,8 @@ fctls12_statem_client_write_transition(TLS *s)
         case TLS_ST_BEFORE:
             st->sm_hand_state = TLS_ST_CW_CLNT_HELLO;
             return WRITE_TRAN_CONTINUE;
+        case TLS_ST_CW_CLNT_HELLO:
+            return WRITE_TRAN_FINISHED;
         default:
             return WRITE_TRAN_ERROR;
     }
@@ -94,7 +96,17 @@ fctls12_statem_client_write_pre_work(TLS *s)
 static WORK_STATE
 fctls12_statem_client_write_post_work(TLS *s)
 {
+    TLS_STATEM  *st = &s->tls_statem;
+
     FC_LOG("in\n");
+    s->tls_init_num = 0;
+    switch (st->sm_hand_state) {
+        case TLS_ST_CW_CLNT_HELLO:
+            break;
+        default:
+            break;
+    }
+
     return WORK_FINISHED_CONTINUE;
 }
 

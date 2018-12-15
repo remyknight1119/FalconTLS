@@ -162,6 +162,7 @@ int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
         int *m_type, TLS_CONSTRUCT_MESSAGE *array, size_t size);
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
+int tls_get_message_header(TLS *s, int *mt);
 int TLS_in_init(TLS *s);
 
 #endif
