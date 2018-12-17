@@ -6,12 +6,10 @@
 #include "packet_locl.h"
 #include "record_locl.h"
 
-#define GETBUF(p)       (unsigned char *)(p)->wk_buf->bm_data
-
 unsigned char *
 WPACKET_get_curr(WPACKET *pkt)
 {
-    return GETBUF(pkt) + pkt->wk_curr;
+    return WPKT_GETBUF(pkt) + pkt->wk_curr;
 }
 
 int

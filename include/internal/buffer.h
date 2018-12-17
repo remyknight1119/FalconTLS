@@ -10,4 +10,6 @@ struct fc_buf_mem_t {
     ulong       bm_flags;
 };
 
+#define GET_BUF_DATA(buf)   buf->bm_data
+
 #endif

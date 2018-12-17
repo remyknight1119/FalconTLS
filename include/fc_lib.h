@@ -26,6 +26,17 @@
 #define FC_MAX(a, b) (a > b ? a:b)
 #define FC_MIN(a, b) (a < b ? a:b)
 
+#define set_h1(d, s, t)     (*d = *s)
+#define set_h2(d, s, t)     (*d = ((t)(*s) << 8), \
+                             *d |= *(s + 1))
+#define set_h3(d, s, t)     (*d = ((t)(*s) << 16), \
+                             *d |= ((t)(*(s + 1))) << 8, \
+                             *d |= *(s + 2))
+#define set_h4(d, s, t)     (*d = ((t)(*s) << 24), \
+                             *d |= ((t)(*(s + 1))) << 16, \
+                             *d |= ((t)(*(s + 2))) << 8, \
+                             *d |= *(s + 3))
+
 #define FC_SET_LENGTH(dest, value) \
     do { \
         typeof(value)   n; \

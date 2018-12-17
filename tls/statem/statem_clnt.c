@@ -7,7 +7,7 @@
 #include "tls_locl.h"
 #include "handshake.h"
 
-static int fctls12_statem_client_read_transition(TLS *s);
+static int fctls12_statem_client_read_transition(TLS *s, int mt);
 static MSG_PROCESS_RETURN fctls12_statem_client_process_message(TLS *s,
                             PACKET *pkt);
 static WORK_STATE fctls12_statem_client_post_process_message(TLS *s);
@@ -45,7 +45,7 @@ TLS_WRITE_STATEM tls12_client_write_statem_proc = {
 };
 
 static int
-fctls12_statem_client_read_transition(TLS *s)
+fctls12_statem_client_read_transition(TLS *s, int mt)
 {
     return 1;
 }

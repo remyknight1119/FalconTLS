@@ -207,7 +207,7 @@ tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int mt)
     handshake_t     *h = NULL;
     uint8_t         *len = NULL;
 
-    h = (void *)pkt->wk_buf->bm_data;
+    h = (void *)WPKT_GETBUF(pkt);
     h->hk_type  = mt;
     len = &h->hk_len[0];
     l2n3(pkt->wk_written, len);

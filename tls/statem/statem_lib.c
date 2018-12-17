@@ -12,7 +12,8 @@ tls_do_write(TLS *s, int type)
     size_t  written = 0;
     int     ret = 0;
 
-    ret = tls_write_bytes(s, type, &s->tls_init_buf->bm_data[s->tls_init_off],
+    ret = s->tls_method->md_tls_write_bytes(s, type,
+            &s->tls_init_buf->bm_data[s->tls_init_off],
             s->tls_init_num, &written);
     if (ret < 0) {
         return -1;
@@ -49,15 +50,16 @@ int
 tls_get_message_header(TLS *s, int *mt)
 {
     unsigned char   *p = NULL;
-    //size_t          l = 0;
+    size_t          l = 0;
     size_t          readbytes = 0;
     int             recvd_type = 0;
+    int             skip_message = 0;
     int             i = 0;
 
-    p = (unsigned char *)s->tls_init_buf->bm_data;
+    p = (unsigned char *)TLS_GET_INIT_BUF_DATA(s);
     do {
         while (s->tls_init_num < TLS_HM_HEADER_LENGTH) {
-            i = tls_read_bytes(s, TLS_RT_HANDSHAKE, &recvd_type,
+            i = s->tls_method->md_tls_read_bytes(s, TLS_RT_HANDSHAKE, &recvd_type,
                                           &p[s->tls_init_num],
                                           TLS_HM_HEADER_LENGTH - s->tls_init_num,
                                           &readbytes);
@@ -71,12 +73,24 @@ tls_get_message_header(TLS *s, int *mt)
             }
 
             s->tls_init_num += readbytes;
+            skip_message = 0;
         }
-    } while (1);
+    } while (skip_message);
  
-    s->tls_init_msg = s->tls_init_buf->bm_data + TLS_HM_HEADER_LENGTH;
+    *mt = *p;
+    s->tls_state.st_message_type = *(p++);
+    n2l3(p, l);
+    s->tls_state.st_message_size = l;
+
+    s->tls_init_msg = TLS_GET_INIT_BUF_DATA(s) + TLS_HM_HEADER_LENGTH;
     s->tls_init_num = 0;
 
+    return 1;
+}
+
+int
+tls_get_message_body(TLS *s, size_t *len)
+{
     return 1;
 }
 

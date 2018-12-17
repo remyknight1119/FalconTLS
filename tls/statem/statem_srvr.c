@@ -4,7 +4,7 @@
 #include "statem.h"
 #include "tls_locl.h"
 
-static int fctls12_statem_server_read_transition(TLS *s);
+static int fctls12_statem_server_read_transition(TLS *s, int mt);
 static MSG_PROCESS_RETURN fctls12_statem_server_process_message(TLS *s,
                             PACKET *pkt);
 static WORK_STATE fctls12_statem_server_post_process_message(TLS *s);
@@ -30,7 +30,7 @@ TLS_WRITE_STATEM tls12_server_write_statem_proc = {
 };
 
 static int
-fctls12_statem_server_read_transition(TLS *s)
+fctls12_statem_server_read_transition(TLS *s, int mt)
 {
     return 1;
 }

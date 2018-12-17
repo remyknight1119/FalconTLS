@@ -9,6 +9,7 @@
 #include <falcontls/safestack.h>
 #include <falcontls/evp.h>
 
+#include "record.h"
 #include "record_locl.h"
 #include "packet_locl.h"
 #include "statem.h"
@@ -114,6 +115,10 @@
 #define TLSEXT_TYPE_renegotiate                 0xff01
 
 
+#define TLS_ST_READ_HEADER                      0xF0
+#define TLS_ST_READ_BODY                        0xF1
+#define TLS_ST_READ_DONE                        0xF2
+
 
 #define n2s(c,s)        ((s=(((uint32_t)((c)[0]))<< 8)| \
                              (((uint32_t)((c)[1]))    )),(c)+=2)
@@ -129,6 +134,10 @@
                            (c)[2]=(uint8_t)(((l)    )&0xff)),(c)+=3)
 
 
+typedef struct tls_state_t {
+    size_t      st_message_size;
+    int         st_message_type;
+} TLS_STATE;
 
 struct tls_t {
     TLS_STATEM                  tls_statem;
@@ -146,7 +155,9 @@ struct tls_t {
     int                         tls_init_off;
     void                        *tls_init_msg;
     size_t                      tls_init_num;
+    size_t                      tls_max_pipelines;
     RECORD_LAYER                tls_rlayer;
+    TLS_STATE                   tls_state;
     uint32_t                    tls_max_send_fragment;
     struct {
         size_t                  ecpointformats_len;
@@ -156,6 +167,8 @@ struct tls_t {
         int                     use_etm;
     } tls_ext;
 };
+
+#define TLS_GET_INIT_BUF_DATA(s)    GET_BUF_DATA(s->tls_init_buf)
  
 typedef struct tls_enc_method_t {
     int         (*em_enc)(TLS *, TLS_RECORD *, uint32_t, int);
@@ -202,9 +215,9 @@ struct tls_method_t {
     int                     (*md_tls_renegotiate)(TLS *s);
     int                     (*md_tls_renegotiate_check)(TLS *s);
     int                     (*md_tls_read_bytes)(TLS *s, int type, int *recvd_type,
-                                uint8_t *buf, int len, int peek); 
+                                void *buf, size_t len, size_t *read_bytes);
     int                     (*md_tls_write_bytes)(TLS *s, int type, 
-                                const void *buf_, int len);
+                                const void *buf, size_t len, size_t *written);
     int                     (*md_tls_dispatch_alert)(TLS *s); 
     long                    (*md_tls_ctrl)(TLS *s, int cmd, long larg,
                                 void *parg);
@@ -251,6 +264,8 @@ TLS_ENC_METHOD const TLSv1_2_enc_data;
             .md_tls_free = tls1_2_free, \
             .md_num_ciphers = tls1_2_num_ciphers, \
             .md_get_cipher = tls1_2_get_cipher, \
+            .md_tls_write_bytes = tls_write_bytes, \
+            .md_tls_read_bytes = tls1_2_read_bytes, \
             .md_get_cipher_by_char = tls1_2_get_cipher_by_char, \
             .md_put_cipher_by_char = tls1_2_put_cipher_by_char, \
             .md_tls_enc = enc_data, \

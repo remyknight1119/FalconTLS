@@ -62,40 +62,40 @@ typedef struct tls_buffer_t {
 typedef struct tls_record_t {
     /* Record layer version */
     /* r */
-    int         rd_rec_version;
+    unsigned int    rd_rec_version;
     /* type of record */
     /* r */
-    int         rd_type;
+    unsigned int    rd_type;
     /* How many bytes available */
     /* rw */
-    uint32_t      rd_length;
+    size_t          rd_length;
     /*
      * How many bytes were available before padding was removed? This is used
      * to implement the MAC check in constant time for CBC records.
      */
     /* rw */
-    uint32_t      rd_orig_len;
+    uint32_t        rd_orig_len;
     /* read/write offset into 'buf' */
     /* r */
-    uint32_t      rd_off;
+    uint32_t        rd_off;
     /* pointer to the record data */
     /* rw */
-    uint8_t       *rd_data;
+    uint8_t         *rd_data;
     /* where the decode bytes are */
     /* rw */
-    uint8_t       *rd_input;
+    uint8_t         *rd_input;
     /* only used with decompression - malloc()ed */
     /* r */
-    uint8_t       *rd_comp;
+    uint8_t         *rd_comp;
     /* Whether the data from this record has already been read or not */
     /* r */
-    uint32_t      rd_read;
+    uint32_t        rd_read;
     /* epoch number, needed by DTLS1 */
     /* r */
     ulong           rd_epoch;
     /* sequence number, needed by DTLS1 */
     /* r */
-    uint8_t       rd_seq_num[SEQ_NUM_SIZE];
+    uint8_t         rd_seq_num[SEQ_NUM_SIZE];
 } TLS_RECORD;
 
 
@@ -173,9 +173,6 @@ typedef struct _record_t record_t;
 #define TLS_RT_HEADER_LENGTH    sizeof(record_t)
 
 int tls_setup_buffers(TLS *s);
-int tls12_read_bytes(TLS *s, int type, int *recvd_type,
-        uint8_t *buf, int len, int peek);
-int tls12_write_bytes(TLS *s, int type, const void *buf, int len);
 int tls_setup_read_buffer(TLS *s);
 int tls_setup_write_buffer(TLS *s, uint32_t numwpipes, size_t len);
 int tls_release_write_buffer(TLS *s);

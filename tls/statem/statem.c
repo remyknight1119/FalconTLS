@@ -50,6 +50,7 @@ static SUB_STATE_RETURN
 read_state_machine(TLS *s, TLS_READ_STATEM *read)
 {
     TLS_STATEM          *st = &s->tls_statem;
+    size_t              len = 0;
     int                 mt = 0;
     int                 ret = 0;
 
@@ -62,8 +63,19 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
                 return SUB_STATE_ERROR;
             }
 
-            break;
+            if (!read->rs_transition(s, mt)) {
+                return SUB_STATE_ERROR;
+            }
+
+            st->sm_read_state = READ_STATE_BODY;
+            /* Fall through */
+
         case READ_STATE_BODY:
+            ret = tls_get_message_body(s, &len);
+            if (ret == 0) {
+                return SUB_STATE_ERROR;
+            }
+
             break;
         case READ_STATE_POST_PROCESS:
             break;

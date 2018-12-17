@@ -139,7 +139,7 @@ typedef struct tls_statem_t {
 } TLS_STATEM;
 
 typedef struct tls_read_statem_t {
-    int                 (*rs_transition)(TLS *s);
+    int                 (*rs_transition)(TLS *s, int mt);
     MSG_PROCESS_RETURN  (*rs_process_message)(TLS *s, PACKET *pkt);
     WORK_STATE          (*rs_post_process_message)(TLS *s);
 } TLS_READ_STATEM;
@@ -163,6 +163,7 @@ int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
 int tls_get_message_header(TLS *s, int *mt);
+int tls_get_message_body(TLS *s, size_t *len);
 int TLS_in_init(TLS *s);
 
 #endif
