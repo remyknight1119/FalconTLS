@@ -96,6 +96,34 @@ DEFINE_PACKET_GET_NET(3, unsigned long)
 
 DEFINE_PACKET_GET_NET(4, unsigned long)
 
+/* Peek ahead at |len| bytes from |pkt| and copy them to |data| */
+static inline int PACKET_peek_copy_bytes(const PACKET *pkt,
+                        unsigned char *data, size_t len)
+{
+    if (PACKET_remaining(pkt) < len) {
+        return 0;
+    }
+
+    memcpy(data, pkt->pk_curr, len);
+
+    return 1;
+}
+
+/*
+ * Read |len| bytes from |pkt| and copy them to |data|.
+ * The caller is responsible for ensuring that |data| can hold |len| bytes.
+ */
+static inline int PACKET_copy_bytes(PACKET *pkt, void *data, size_t len)
+{
+    if (!PACKET_peek_copy_bytes(pkt, data, len)) {
+        return 0;
+    }
+
+    packet_forward(pkt, len);
+
+    return 1;
+}
+
 typedef struct wpacket_t {
     /* The buffer where we store the output data */
     FC_BUF_MEM      *wk_buf;

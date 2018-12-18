@@ -46,6 +46,21 @@ tls_stream_get_construct_message(TLS *s, construct_message_f *func, int *m_type,
     return -1;
 }
 
+process_message_f
+tls_stream_get_process_message(TLS *s, TLS_PROCESS_MESSAGE *array, size_t size)
+{
+    TLS_STATEM  *st = &s->tls_statem;
+    int         i = 0;
+
+    for (i = 0; i < size; i++) {
+        if (st->sm_hand_state == array[i].pm_hand_state) {
+            return array[i].pm_proc;
+        }
+    }
+
+    return NULL;
+}
+
 int
 tls_get_message_header(TLS *s, int *mt)
 {
@@ -91,6 +106,27 @@ tls_get_message_header(TLS *s, int *mt)
 int
 tls_get_message_body(TLS *s, size_t *len)
 {
+    unsigned char   *p = NULL;
+    size_t          n = 0;
+    size_t          readbytes = 0;
+    int             i = 0;
+
+    p = s->tls_init_msg;
+    n = s->tls_state.st_message_size - s->tls_init_num;
+    while (n > 0) {
+        i = s->tls_method->md_tls_read_bytes(s, TLS_RT_HANDSHAKE, NULL,
+                            &p[s->tls_init_num], n, &readbytes);
+        if (i <= 0) {
+            //s->rwstate = SSL_READING;
+            *len = 0;
+            return 0;
+        }
+        s->tls_init_num += readbytes;
+        n -= readbytes;
+    }
+
+    *len = s->tls_init_num;
+
     return 1;
 }
 

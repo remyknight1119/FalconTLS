@@ -139,6 +139,17 @@ typedef struct tls_state_t {
     int         st_message_type;
 } TLS_STATE;
 
+#define TLS1_2_RANDOM_BYTE_LEN      28
+
+typedef struct tls1_2_random_t {
+    uint32_t        rm_unixt_time;
+    uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
+} TLS1_2_RANDOM;
+
+typedef struct tls1_2_handshake_t {
+    TLS1_2_RANDOM   hk_random;
+} TLS1_2_HANDSHAKE;
+
 struct tls_t {
     TLS_STATEM                  tls_statem;
     bool                        tls_server;
@@ -159,6 +170,9 @@ struct tls_t {
     RECORD_LAYER                tls_rlayer;
     TLS_STATE                   tls_state;
     uint32_t                    tls_max_send_fragment;
+    union {
+        TLS1_2_HANDSHAKE        tls1_2;
+    } tls_handshake;
     struct {
         size_t                  ecpointformats_len;
         unsigned char           *ecpointformats;

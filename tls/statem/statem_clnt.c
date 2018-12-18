@@ -18,18 +18,30 @@ TLS_READ_STATEM tls12_client_read_statem_proc = {
     .rs_post_process_message = fctls12_statem_client_post_process_message,
 };
 
-static int tls_construct_client_hello(TLS *s, WPACKET *pkt);
+static int tls1_2_construct_client_hello(TLS *s, WPACKET *pkt);
 
 static TLS_CONSTRUCT_MESSAGE tls12_client_construct_message[] = {
     {
         .cm_hand_state = TLS_ST_CW_CLNT_HELLO,
         .cm_message_type = TLS_MT_CLIENT_HELLO,
-        .cm_construct = tls_construct_client_hello,
+        .cm_construct = tls1_2_construct_client_hello,
     },
 };
 
 #define tls12_client_construct_message_num \
     FC_ARRAY_SIZE(tls12_client_construct_message)
+
+static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
+
+static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
+    {
+        .pm_hand_state = TLS_ST_CR_SRVR_HELLO,
+        .pm_proc = tls1_2_process_server_hello,
+    },
+};
+
+#define tls12_client_process_message_num \
+    FC_ARRAY_SIZE(tls12_client_process_message)
 
 static WRITE_TRAN fctls12_statem_client_write_transition(TLS *s);
 static WORK_STATE fctls12_statem_client_write_pre_work(TLS *s);
@@ -47,13 +59,33 @@ TLS_WRITE_STATEM tls12_client_write_statem_proc = {
 static int
 fctls12_statem_client_read_transition(TLS *s, int mt)
 {
-    return 1;
+    TLS_STATEM  *st = &s->tls_statem;
+
+    switch (st->sm_hand_state) {
+        case TLS_ST_CW_CLNT_HELLO:
+            if (mt == TLS_MT_SERVER_HELLO) {
+                st->sm_hand_state = TLS_ST_CR_SRVR_HELLO;
+                return 1;
+            }
+        default:
+            break;
+    }
+
+    return 0;
 }
 
 static MSG_PROCESS_RETURN
 fctls12_statem_client_process_message(TLS *s, PACKET *pkt)
 {
-    return MSG_PROCESS_CONTINUE_READING;
+    process_message_f   proc = NULL;
+
+    proc = tls_stream_get_process_message(s, tls12_client_process_message, 
+            tls12_client_process_message_num);
+    if (proc == NULL) {
+        return MSG_PROCESS_ERROR; 
+    }
+
+    return proc(s, pkt);
 }
 
 static WORK_STATE
@@ -162,7 +194,7 @@ tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
 }
 
 static int
-tls_construct_client_hello(TLS *s, WPACKET *pkt)
+tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
 {
     client_hello_t  *ch = NULL;
     unsigned char   *p = NULL;
@@ -220,5 +252,27 @@ tls_construct_client_hello(TLS *s, WPACKET *pkt)
     return 1;
 err:
     return 0;
+}
+
+static MSG_PROCESS_RETURN
+tls1_2_process_server_hello(TLS *s, PACKET *pkt)
+{
+    TLS1_2_HANDSHAKE    *h = NULL;
+    unsigned int        sversion = 0;
+
+    FC_LOG("in\n");
+    if (!PACKET_get_net_2(pkt, &sversion)) {
+        goto err;
+    }
+
+    h = &s->tls_handshake.tls1_2;
+    /* load the server random */
+    if (!PACKET_copy_bytes(pkt, &h->hk_random, sizeof(h->hk_random))) {
+        goto err;
+    }
+
+    return MSG_PROCESS_CONTINUE_READING;
+err:
+    return MSG_PROCESS_ERROR;
 }
 

@@ -120,12 +120,18 @@ typedef enum {
 } WRITE_STATE;
 
 typedef int (*construct_message_f)(TLS *s, WPACKET *pkt);
+typedef MSG_PROCESS_RETURN (*process_message_f)(TLS *s, PACKET *pkt);
 
 typedef struct tls_construct_message_t {
     TLS_HANDSHAKE_STATE     cm_hand_state;
     int                     cm_message_type;
     construct_message_f     cm_construct;
 } TLS_CONSTRUCT_MESSAGE;
+
+typedef struct tls_process_message_t {
+    TLS_HANDSHAKE_STATE     pm_hand_state;
+    process_message_f       pm_proc;
+} TLS_PROCESS_MESSAGE;
 
 typedef struct tls_statem_t {
     MSG_FLOW_STATE      sm_state;
@@ -160,6 +166,8 @@ TLS_WRITE_STATEM tls12_server_write_statem_proc;
 void tls_statem_clear(TLS *s);
 int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
         int *m_type, TLS_CONSTRUCT_MESSAGE *array, size_t size);
+process_message_f tls_stream_get_process_message(TLS *s,
+        TLS_PROCESS_MESSAGE *array, size_t size);
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
 int tls_get_message_header(TLS *s, int *mt);

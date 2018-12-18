@@ -50,6 +50,7 @@ static SUB_STATE_RETURN
 read_state_machine(TLS *s, TLS_READ_STATEM *read)
 {
     TLS_STATEM          *st = &s->tls_statem;
+    PACKET              pkt = {};
     size_t              len = 0;
     int                 mt = 0;
     int                 ret = 0;
@@ -71,11 +72,37 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
             /* Fall through */
 
         case READ_STATE_BODY:
+            FC_LOG("body!\n");
             ret = tls_get_message_body(s, &len);
             if (ret == 0) {
+                FC_LOG("Get message body failed!\n");
                 return SUB_STATE_ERROR;
             }
 
+            if (!PACKET_buf_init(&pkt, s->tls_init_msg, len)) {
+                return SUB_STATE_ERROR;
+            }
+            ret = read->rs_process_message(s, &pkt);
+
+            /* Discard the packet data */
+            s->tls_init_num = 0;
+
+            switch (ret) {
+                case MSG_PROCESS_ERROR:
+                    return SUB_STATE_ERROR;
+
+                case MSG_PROCESS_FINISHED_READING:
+                    return SUB_STATE_FINISHED;
+
+                case MSG_PROCESS_CONTINUE_PROCESSING:
+                    st->sm_read_state = READ_STATE_POST_PROCESS;
+                    st->sm_read_state_work = WORK_MORE_A;
+                    break;
+
+                default:
+                    st->sm_read_state = READ_STATE_HEADER;
+                    break;
+            }
             break;
         case READ_STATE_POST_PROCESS:
             break;
