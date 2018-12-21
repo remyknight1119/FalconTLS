@@ -58,6 +58,7 @@ tls_read_n(TLS *s, size_t n, size_t max, int extend, int clearold,
         size_t *readbytes)
 {
     TLS_BUFFER      *rb = NULL;
+    RECORD_LAYER    *rlayer = NULL;
     uint8_t         *pkt = NULL;
     size_t          len = 0;
     size_t          bioread = 0;
@@ -68,9 +69,17 @@ tls_read_n(TLS *s, size_t n, size_t max, int extend, int clearold,
         return 0;
     }
 
-    rb = RECORD_LAYER_get_rbuf(&s->tls_rlayer);
+    rlayer = &s->tls_rlayer;
+    rb = RECORD_LAYER_get_rbuf(rlayer);
     left = rb->bf_left;
+    if (!extend) {
+        /* start with empty packet ... */
+        RECORD_LAYER_set_packet(rlayer, &rb->bf_buf[rb->bf_offset]);
+        RECORD_LAYER_reset_packet_length(rlayer);
+    }
+
     if (left >= n) {
+        FC_LOG("left, n = %d\n", (int)n);
         goto out;
     }
 
@@ -82,9 +91,10 @@ tls_read_n(TLS *s, size_t n, size_t max, int extend, int clearold,
         max = rb->bf_len - rb->bf_offset;
     }
 
-    len = RECORD_LAYER_get_packet_length(&s->tls_rlayer);
+    len = RECORD_LAYER_get_packet_length(rlayer);
     pkt = rb->bf_buf + rb->bf_offset;
     while (left < n) {
+        FC_LOG("BIO read\n");
         ret = FC_BIO_read(s->tls_rbio, pkt + len + left, max - left);
         if (ret >= 0) {
             bioread = ret;
@@ -100,7 +110,7 @@ tls_read_n(TLS *s, size_t n, size_t max, int extend, int clearold,
 out:
     TLS_BUFFER_set_left(rb, left -n);
     TLS_BUFFER_add_offset(rb, n);
-    RECORD_LAYER_add_packet_length(&s->tls_rlayer, n);
+    RECORD_LAYER_add_packet_length(rlayer, n);
     *readbytes = n;
     return 1;
 }
@@ -169,14 +179,17 @@ tls_get_record(TLS *s)
 
         thisrr->rd_input = &(RECORD_LAYER_get_packet(rlayer)[TLS_RT_HEADER_LENGTH]);
         thisrr->rd_data = thisrr->rd_input;
+        thisrr->rd_read = 0;
         /* set state for later operations */
-        RECORD_LAYER_set_rstate(&s->tls_rlayer, TLS_ST_READ_HEADER);
+        RECORD_LAYER_set_rstate(rlayer, TLS_ST_READ_HEADER);
 
         num_recs++;
 
         RECORD_LAYER_reset_packet_length(rlayer);
         RECORD_LAYER_clear_first_record(rlayer);
     } while (num_recs < max_recs && thisrr->rd_type == TLS_RT_APPLICATION_DATA);
+
+    RECORD_LAYER_set_numrpipes(rlayer, num_recs);
 
     return 1;
 }
@@ -185,19 +198,44 @@ int
 tls1_2_read_bytes(TLS *s, int type, int *recvd_type, void *buf, size_t len,
         size_t *read_bytes)
 {
-    TLS_RECORD     *rr = NULL;
+    TLS_RECORD      *rr = NULL;
+    RECORD_LAYER    *rlayer = NULL;
     size_t          n = 0;
+    size_t          curr_rec = 0;
+    size_t          num_recs = 0;
     size_t          totalbytes = 0;
     int             ret = 0;
 
-    rr = RECORD_LAYER_get_rrec(&s->tls_rlayer);
+    rlayer = &s->tls_rlayer;
+    rr = RECORD_LAYER_get_rrec(rlayer);
 
 start:
     FC_LOG("in\n");
-    ret = tls_get_record(s);
-    if (ret <= 0) {
-        return ret;
-    }
+    num_recs = RECORD_LAYER_get_numrpipes(rlayer);
+
+    do {
+        if (num_recs == 0) {
+            ret = tls_get_record(s);
+            if (ret <= 0) {
+                return ret;
+            }
+            num_recs = RECORD_LAYER_get_numrpipes(rlayer);
+            if (num_recs == 0) {
+                return -1;
+            }
+        }
+        /* Skip over any records we have already read */
+        for (curr_rec = 0;
+                curr_rec < num_recs && TLS_RECORD_is_read(&rr[curr_rec]);
+                curr_rec++) ;
+        if (curr_rec == num_recs) {
+            RECORD_LAYER_set_numrpipes(rlayer, 0);
+            num_recs = 0;
+            curr_rec = 0;
+        }
+    } while (num_recs == 0);
+
+    rr = &rr[curr_rec];
 
     if (type == TLS_RECORD_get_type(rr)) {
         if (recvd_type != NULL) {
@@ -208,16 +246,28 @@ start:
         do {
             if (len - totalbytes > TLS_RECORD_get_length(rr)) {
                 n = TLS_RECORD_get_length(rr);
+                FC_LOG("get\n");
             } else {
                 n = len - totalbytes;
+                FC_LOG("total\n");
             }
 
+            FC_LOG("off = %d, n = %d\n", rr->rd_off, (int)n);
             memcpy(buf, &(rr->rd_data[rr->rd_off]), n);
             buf += n;
             TLS_RECORD_sub_length(rr, n);
             TLS_RECORD_add_off(rr, n);
+            if (TLS_RECORD_get_length(rr) == 0) {
+                FC_LOG("off set 0\n");
+                TLS_RECORD_set_off(rr, 0);
+                TLS_RECORD_set_read(rr);
+                RECORD_LAYER_set_rstate(rlayer, TLS_ST_READ_HEADER);
+                curr_rec++;
+                rr++;
+            }
             totalbytes += n;
-        } while (type == TLS_RT_APPLICATION_DATA && totalbytes < len);
+        } while (type == TLS_RT_APPLICATION_DATA && curr_rec < num_recs
+                && totalbytes < len);
 
         if (totalbytes == 0) {
             /* We must have read empty records. Get more data */

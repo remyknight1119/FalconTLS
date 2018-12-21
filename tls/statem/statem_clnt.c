@@ -32,11 +32,17 @@ static TLS_CONSTRUCT_MESSAGE tls12_client_construct_message[] = {
     FC_ARRAY_SIZE(tls12_client_construct_message)
 
 static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
+static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
+                            PACKET *pkt);
 
 static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_SRVR_HELLO,
         .pm_proc = tls1_2_process_server_hello,
+    },
+    {
+        .pm_hand_state = TLS_ST_CR_CERT,
+        .pm_proc = tls1_2_process_server_certificate,
     },
 };
 
@@ -61,12 +67,21 @@ fctls12_statem_client_read_transition(TLS *s, int mt)
 {
     TLS_STATEM  *st = &s->tls_statem;
 
+    FC_LOG("mt = %d\n", mt);
     switch (st->sm_hand_state) {
         case TLS_ST_CW_CLNT_HELLO:
             if (mt == TLS_MT_SERVER_HELLO) {
                 st->sm_hand_state = TLS_ST_CR_SRVR_HELLO;
                 return 1;
             }
+
+            break;
+        case TLS_ST_CR_SRVR_HELLO:
+            if (mt == TLS_MT_CERTIFICATE) {
+                st->sm_hand_state = TLS_ST_CR_CERT;
+                return 1;
+            }
+            break;
         default:
             break;
     }
@@ -314,3 +329,10 @@ err:
     return MSG_PROCESS_ERROR;
 }
 
+static
+MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
+                            PACKET *pkt)
+{
+    FC_LOG("in\n");
+    return MSG_PROCESS_CONTINUE_READING;
+}

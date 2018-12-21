@@ -12,6 +12,7 @@
 #define RECORD_LAYER_get_wbuf(rl)               ((rl)->rl_wbuf)
 #define RECORD_LAYER_get_rrec(rl)               ((rl)->rl_rrec)
 #define RECORD_LAYER_set_packet(rl, p)          ((rl)->rl_packet = (p))
+#define RECORD_LAYER_add_packet(rl, n)          ((rl)->rl_packet += (n))
 #define RECORD_LAYER_reset_packet_length(rl)    ((rl)->rl_packet_length = 0)
 #define RECORD_LAYER_get_rstate(rl)             ((rl)->rl_rstate)
 #define RECORD_LAYER_set_rstate(rl, st)         ((rl)->rl_rstate = (st))

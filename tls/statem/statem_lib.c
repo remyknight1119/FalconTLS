@@ -113,6 +113,7 @@ tls_get_message_body(TLS *s, size_t *len)
 
     p = s->tls_init_msg;
     n = s->tls_state.st_message_size - s->tls_init_num;
+    FC_LOG("s = %d, num = %d\n", (int)s->tls_state.st_message_size, (int)s->tls_init_num);
     while (n > 0) {
         i = s->tls_method->md_tls_read_bytes(s, TLS_RT_HANDSHAKE, NULL,
                             &p[s->tls_init_num], n, &readbytes);
