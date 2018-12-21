@@ -133,3 +133,9 @@ final_ec_pt_formats(TLS *s, unsigned int context, int sent)
     return 1;
 }
 
+int
+tls_parse_all_extensions(TLS *s, PACKET *pkt)
+{
+    return 1;
+}
+

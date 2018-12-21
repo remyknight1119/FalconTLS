@@ -47,4 +47,6 @@ EXT_RETURN tls_construct_ctos_supported_groups(TLS *s, WPACKET *pkt,
 EXT_RETURN tls_construct_stoc_supported_groups(TLS *s, WPACKET *pkt,
                     uint32_t context, FC_X509 *x, size_t chainidx);
 
+int tls_parse_all_extensions(TLS *s, PACKET *pkt);
+
 #endif

@@ -124,6 +124,75 @@ static inline int PACKET_copy_bytes(PACKET *pkt, void *data, size_t len)
     return 1;
 }
 
+static inline int PACKET_peek_bytes(const PACKET *pkt,
+                                const unsigned char **data,
+                                size_t len)
+{
+    if (PACKET_remaining(pkt) < len) {
+        return 0;
+    }
+
+    *data = pkt->pk_curr;
+
+    return 1;
+}
+
+static inline int PACKET_get_bytes(PACKET *pkt, const unsigned char **data,
+                                               size_t len)
+{
+    if (!PACKET_peek_bytes(pkt, data, len)) {
+        return 0;
+    }
+
+    packet_forward(pkt, len);
+
+    return 1;
+}
+
+static inline int PACKET_get_length_prefixed_1(PACKET *pkt, PACKET *subpkt)
+{
+    const unsigned char *data = NULL;
+    PACKET              tmp = *pkt;
+    unsigned int        length;
+
+    if (!PACKET_get_1(&tmp, &length) ||
+        !PACKET_get_bytes(&tmp, &data, (size_t)length)) {
+        return 0;
+    }
+
+    *pkt = tmp;
+    subpkt->pk_curr = data;
+    subpkt->pk_remaining = length;
+
+    return 1;
+}
+
+static inline int PACKET_as_length_prefixed_2(PACKET *pkt, PACKET *subpkt)
+{
+    const unsigned char *data = NULL;
+    PACKET              tmp = *pkt;
+    unsigned int        length = 0;
+
+    if (!PACKET_get_net_2(&tmp, &length) ||
+        !PACKET_get_bytes(&tmp, &data, (size_t)length) ||
+        PACKET_remaining(&tmp) != 0) {
+        return 0;
+    }
+
+    *pkt = tmp;
+    subpkt->pk_curr = data;
+    subpkt->pk_remaining = length;
+
+    return 1;
+}
+
+static inline void PACKET_null_init(PACKET *pkt)
+{
+    pkt->pk_curr = NULL;
+    pkt->pk_remaining = 0;
+}
+
+
 typedef struct wpacket_t {
     /* The buffer where we store the output data */
     FC_BUF_MEM      *wk_buf;

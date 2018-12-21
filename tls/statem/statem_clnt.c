@@ -254,11 +254,21 @@ err:
     return 0;
 }
 
+static int
+set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
+{
+    return 1;
+}
+
 static MSG_PROCESS_RETURN
 tls1_2_process_server_hello(TLS *s, PACKET *pkt)
 {
     TLS1_2_HANDSHAKE    *h = NULL;
+    const unsigned char *cipherchars = NULL;
     unsigned int        sversion = 0;
+    unsigned int        compression = 0;
+    PACKET              session_id = {};
+    PACKET              extpkt = {};
 
     FC_LOG("in\n");
     if (!PACKET_get_net_2(pkt, &sversion)) {
@@ -268,6 +278,34 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
     h = &s->tls_handshake.tls1_2;
     /* load the server random */
     if (!PACKET_copy_bytes(pkt, &h->hk_random, sizeof(h->hk_random))) {
+        goto err;
+    }
+
+    if (!PACKET_get_length_prefixed_1(pkt, &session_id)) {
+        goto err;
+    }
+ 
+    if (!PACKET_get_bytes(pkt, &cipherchars, TLS_CIPHER_LEN)) {
+        goto err;
+    }
+ 
+    if (!PACKET_get_1(pkt, &compression)) {
+        goto err;
+    }
+ 
+    /* TLS extensions */
+    if (PACKET_remaining(pkt) == 0) {
+        PACKET_null_init(&extpkt);
+    } else if (!PACKET_as_length_prefixed_2(pkt, &extpkt)
+               || PACKET_remaining(pkt) != 0) {
+        goto err;
+    }
+ 
+    if (!set_client_ciphersuite(s, cipherchars)) {
+        goto err;
+    }
+
+    if (!tls_parse_all_extensions(s, pkt)) {
         goto err;
     }
 

@@ -24,6 +24,8 @@
 #define TLS_RT_HANDSHAKE                    22
 #define TLS_RT_APPLICATION_DATA             23
 
+#define TLS_CIPHER_LEN                  2
+
 #define TLS_MT_HELLO_REQUEST            0
 #define TLS_MT_CLIENT_HELLO             1
 #define TLS_MT_SERVER_HELLO             2
