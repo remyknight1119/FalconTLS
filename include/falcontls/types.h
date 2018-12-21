@@ -22,5 +22,8 @@ typedef struct fc_evp_md_t FC_EVP_MD;
 typedef struct fc_evp_md_ctx_t FC_EVP_MD_CTX;
 typedef struct fc_x509_t FC_X509;
 
+typedef struct FC_ASN1_ITEM_t FC_ASN1_ITEM;
+
+typedef struct fc_asn1_string_t FC_ASN1_BIT_STRING;
 
 #endif

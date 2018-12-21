@@ -1,4 +1,5 @@
 #include <falcontls/types.h>
+#include <falcontls/x509.h>
 #include <fc_lib.h>
 #include <fc_log.h>
 
@@ -329,10 +330,57 @@ err:
     return MSG_PROCESS_ERROR;
 }
 
-static
-MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
+static MSG_PROCESS_RETURN
+tls1_2_process_server_certificate(TLS *s,
                             PACKET *pkt)
 {
+    FC_STACK_OF(FC_X509)    *sk = NULL;
+    FC_X509                 *x = NULL;
+    const unsigned char     *certstart = NULL;
+    const unsigned char     *certbytes = NULL;
+    unsigned long           cert_list_len = 0;
+    unsigned long           cert_len = 0;
+    MSG_PROCESS_RETURN      ret = MSG_PROCESS_ERROR;
+
     FC_LOG("in\n");
-    return MSG_PROCESS_CONTINUE_READING;
+    if ((sk = sk_FC_X509_new_null()) == NULL) {
+        goto err;
+    }
+
+    if (!PACKET_get_net_3(pkt, &cert_list_len)) {
+        goto err;
+    }
+
+    while (PACKET_remaining(pkt)) {
+        if (!PACKET_get_net_3(pkt, &cert_len) ||
+                !PACKET_get_bytes(pkt, &certbytes, cert_len)) {
+            goto err;
+        }
+
+        certstart = certbytes;
+
+        x = d2i_FC_X509(NULL, &certbytes, cert_len);
+        if (x == NULL) {
+            FC_LOG("d2i X509 failed\n");
+            goto err;
+        }
+        if (certbytes != (certstart + cert_len)) {
+            FC_LOG("certbytes error!\n");
+            goto err;
+        }
+
+#if 0
+        if (!sk_FC_X509_push(sk, x)) {
+            goto err;
+        }
+#endif
+        x = NULL;
+    }
+    ret = MSG_PROCESS_CONTINUE_READING;
+
+ err:
+    FC_X509_free(x);
+    sk_FC_X509_pop_free(sk, FC_X509_free);
+    return ret;
 }
+

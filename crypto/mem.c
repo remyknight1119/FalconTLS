@@ -12,6 +12,7 @@ FC_CRYPTO_malloc(size_t num, const char *file, int line)
         FC_LOG("Malloc %d failed!(%s %d)\n", (int)num, file, line);
     }
 
+    FC_LOG("Malloc %p!(%s %d)\n", ptr, file, line);
     return ptr;
 }
 
@@ -25,6 +26,7 @@ FC_CRYPTO_calloc(size_t num, const char *file, int line)
         FC_LOG("Malloc %d failed!(%s %d)\n", (int)num, file, line);
     }
 
+    FC_LOG("Malloc %p!(%s %d)\n", ptr, file, line);
     return ptr;
 }
 
@@ -42,7 +44,8 @@ FC_CRYPTO_realloc(void *str, size_t num, const char *file, int line)
 }
 
 void
-FC_CRYPTO_free(void *ptr)
+FC_CRYPTO_free(void *ptr, const char *file, int line)
 {
+    //FC_LOG("free %p!(%s %d)\n", ptr, file, line);
     free(ptr);
 }

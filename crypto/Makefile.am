@@ -1,7 +1,8 @@
 lib_LTLIBRARIES = libfc_crypto.la
 libfc_crypto_la_SOURCES = mem.c bio/bio_lib.c bio/bio_file.c \
 						  bio/bio_socket.c buffer/buffer.c \
-						  stack/stack.c
+						  stack/stack.c x509/x509.c x509/x509_cmp.c \
+						  x509/x509_set.c x509/x_x509.c init.c
 libfc_crypto_la_LDFLAGS = -version-info 1
 
 AM_CPPFLAGS = -I$(srcdir)/../include

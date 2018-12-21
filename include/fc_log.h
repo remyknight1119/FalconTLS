@@ -9,7 +9,7 @@
                 __LINE__, ##__VA_ARGS__); \
     } while (0)
 
-static inline void print_data(unsigned char *data, int len)
+static inline void print_data(const unsigned char *data, int len)
 {
     int i;
 

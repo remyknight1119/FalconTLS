@@ -270,13 +270,17 @@ FCTLS_write(TLS *s, const void *buf, uint32_t len)
 int
 FCTLS_shutdown(TLS *s)
 {
-    return 0;
+    return 1;
 }
 
 
 int
 FCTLS_init(void)
 {
+    if (!FALCONTLS_init_crypto()) {
+        return 0;
+    }
+
     return 1;
 }
 
