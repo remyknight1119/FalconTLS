@@ -61,6 +61,23 @@ tls_stream_get_process_message(TLS *s, TLS_PROCESS_MESSAGE *array, size_t size)
     return NULL;
 }
 
+process_key_exchange_f
+tls_stream_get_process_key_exchange(uint64_t alg_k,
+            TLS_PROCESS_KEY_EXCHANGE *array,
+            size_t size)
+{
+    int         i = 0;
+
+    for (i = 0; i < size; i++) {
+        if (alg_k & array[i].ke_alg_k) {
+            return array[i].ke_proc;
+        }
+    }
+
+    return NULL;
+}
+
+
 int
 tls_get_message_header(TLS *s, int *mt)
 {

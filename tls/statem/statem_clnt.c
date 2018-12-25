@@ -6,6 +6,7 @@
 #include "statem.h"
 #include "statem_locl.h"
 #include "tls_locl.h"
+#include "cipher.h"
 #include "handshake.h"
 
 static int fctls12_statem_client_read_transition(TLS *s, int mt);
@@ -35,6 +36,7 @@ static TLS_CONSTRUCT_MESSAGE tls12_client_construct_message[] = {
 static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
                             PACKET *pkt);
+static MSG_PROCESS_RETURN tls1_2_process_key_exchange(TLS *s, PACKET *pkt);
 
 static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
@@ -45,10 +47,26 @@ static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
         .pm_hand_state = TLS_ST_CR_CERT,
         .pm_proc = tls1_2_process_server_certificate,
     },
+    {
+        .pm_hand_state = TLS_ST_CR_KEY_EXCH,
+        .pm_proc = tls1_2_process_key_exchange,
+    },
 };
 
 #define tls12_client_process_message_num \
     FC_ARRAY_SIZE(tls12_client_process_message)
+
+static int tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey);
+
+TLS_PROCESS_KEY_EXCHANGE tls12_client_process_key_exchange[] = {
+    {
+        .ke_alg_k = TLS_kECDHE,
+        .ke_proc = tls_process_ske_ecdhe,
+    },
+};
+
+#define tls12_client_process_key_exchange_num \
+    FC_ARRAY_SIZE(tls12_client_process_key_exchange)
 
 static WRITE_TRAN fctls12_statem_client_write_transition(TLS *s);
 static WORK_STATE fctls12_statem_client_write_pre_work(TLS *s);
@@ -82,6 +100,16 @@ fctls12_statem_client_read_transition(TLS *s, int mt)
                 st->sm_hand_state = TLS_ST_CR_CERT;
                 return 1;
             }
+        case TLS_ST_CR_CERT:
+        /* Fall through */
+
+        case TLS_ST_CR_CERT_STATUS:
+            if (mt == TLS_MT_SERVER_KEY_EXCHANGE) {
+                st->sm_hand_state = TLS_ST_CR_KEY_EXCH;
+                return 1;
+            }
+            /* Fall through */
+    case TLS_ST_CR_KEY_EXCH:
             break;
         default:
             break;
@@ -273,6 +301,25 @@ err:
 static int
 set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
 {
+    FC_STACK_OF(TLS_CIPHER) *sk = NULL;
+    const TLS_CIPHER        *c = NULL;
+    int                     i = 0;
+
+    c = tls_get_cipher_by_char(s, cipherchars);
+    if (c == NULL) {
+        FC_LOG("Get cipher failed\n");
+        return 0;
+    }
+ 
+    sk = tls_get_ciphers_by_id(s);
+    i = sk_TLS_CIPHER_find(sk, c);
+    if (i < 0) {
+        FC_LOG("Find cipher failed, sk = %p\n", sk);
+        return 0;
+    }
+
+    s->tls_cipher = c;
+
     return 1;
 }
 
@@ -340,6 +387,7 @@ tls1_2_process_server_certificate(TLS *s,
     const unsigned char     *certbytes = NULL;
     unsigned long           cert_list_len = 0;
     unsigned long           cert_len = 0;
+    int                     i = 0;
     MSG_PROCESS_RETURN      ret = MSG_PROCESS_ERROR;
 
     FC_LOG("in\n");
@@ -369,18 +417,56 @@ tls1_2_process_server_certificate(TLS *s,
             goto err;
         }
 
-#if 0
         if (!sk_FC_X509_push(sk, x)) {
             goto err;
         }
-#endif
         x = NULL;
     }
+
+    i = tls_verify_cert_chain(s, sk);
+    if (i != 1) {
+        goto err;
+    }
+
+    x = sk_FC_X509_value(sk, 0);
+    //X509_up_ref(x);
     ret = MSG_PROCESS_CONTINUE_READING;
 
- err:
+err:
     FC_X509_free(x);
     sk_FC_X509_pop_free(sk, FC_X509_free);
+    return ret;
+}
+
+static int
+tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey)
+{
+    FC_LOG("in\n");
+    return 1;
+}
+
+static MSG_PROCESS_RETURN
+tls1_2_process_key_exchange(TLS *s, PACKET *pkt)
+{
+    FC_EVP_PKEY             *pkey = NULL;
+    process_key_exchange_f  proc = NULL;
+    uint64_t                alg_k = 0;
+    MSG_PROCESS_RETURN      ret = MSG_PROCESS_ERROR;
+
+    FC_LOG("in\n");
+    alg_k = s->tls_cipher->cp_algorithm_mkey;
+    proc = tls_stream_get_process_key_exchange(alg_k,
+            tls12_client_process_key_exchange, 
+            tls12_client_process_key_exchange_num);
+    if (proc == NULL) {
+        goto err;
+    }
+
+    if (!proc(s, pkt, &pkey)) {
+        goto err;
+    }
+
+err:
     return ret;
 }
 

@@ -135,7 +135,6 @@
                            (c)[1]=(uint8_t)(((l)>> 8)&0xff), \
                            (c)[2]=(uint8_t)(((l)    )&0xff)),(c)+=3)
 
-
 typedef struct tls_state_t {
     size_t      st_message_size;
     int         st_message_type;
@@ -162,6 +161,7 @@ struct tls_t {
     FC_BUF_MEM                  *tls_init_buf;
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list;
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list_by_id;
+    const TLS_CIPHER            *tls_cipher;
     int                         (*tls_handshake_func)(TLS *);
     uint16_t                    tls_version;
     int                         tls_fd;
@@ -197,7 +197,7 @@ typedef struct tls_enc_method_t {
 } TLS_ENC_METHOD;
 
 typedef struct tls_cert_pkey_t {
-    //FC_X509                 *cp_x509;
+    FC_X509                 *cp_x509;
     //FC_EVP_PKEY             *cp_privatekey;
     FC_STACK_OF(FC_X509)    *cp_chain;
 } CERT_PKEY;
@@ -255,11 +255,11 @@ struct tls_method_t {
 struct tls_cipher_t {
     const char      *cp_name;           /* text name */
     uint32_t        cp_id;                /* id, 4 bytes, first is version */
-    uint32_t        cp_algorithm_mkey;    /* key exchange algorithm */
-    uint32_t        cp_algorithm_auth;    /* server authentication */
-    uint32_t        cp_algorithm_enc;     /* symmetric encryption */
-    uint32_t        cp_algorithm_mac;     /* symmetric authentication */
-    uint32_t        cp_alg_bits;          /* Number of bits for algorithm */
+    uint64_t        cp_algorithm_mkey;    /* key exchange algorithm */
+    uint64_t        cp_algorithm_auth;    /* server authentication */
+    uint64_t        cp_algorithm_enc;     /* symmetric encryption */
+    uint64_t        cp_algorithm_mac;     /* symmetric authentication */
+    uint64_t        cp_alg_bits;          /* Number of bits for algorithm */
     int             cp_strength_bits;     /* Number of bits really used */
 };
 
@@ -298,5 +298,7 @@ void tls1_get_formatlist(TLS *s, const unsigned char **pformats,
                          size_t *num_formats);
 void tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
                         size_t *pgroupslen);
+int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
+
 
 #endif

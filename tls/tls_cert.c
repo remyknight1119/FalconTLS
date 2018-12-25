@@ -129,3 +129,8 @@ tls_security(const TLS *s, int op, int bits, int nid, void *other)
     return 0;
 }
 
+int
+tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk)
+{
+    return 1;
+}

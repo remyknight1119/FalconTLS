@@ -111,4 +111,6 @@ FC_STACK_OF(TLS_CIPHER) *tls_create_cipher_list(const TLS_METHOD *method,
                         FC_STACK_OF(TLS_CIPHER) 
                         **cipher_list, FC_STACK_OF(TLS_CIPHER) 
                         **cipher_list_by_id, CERT *c);
+const TLS_CIPHER *tls_get_cipher_by_char(TLS *s, const uint8_t *ptr);
+
 #endif

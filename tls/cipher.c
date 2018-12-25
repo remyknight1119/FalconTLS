@@ -4,6 +4,39 @@
 #include "tls_locl.h"
 #include "cipher.h"
 
+int
+tls_cipher_ptr_id_cmp(const TLS_CIPHER *const *ap,
+                          const TLS_CIPHER *const *bp)
+{
+    if ((*ap)->cp_id > (*bp)->cp_id) {
+        return 1;
+    }
+
+    if ((*ap)->cp_id < (*bp)->cp_id) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+update_cipher_list_by_id(FC_STACK_OF(TLS_CIPHER) **cipher_list_by_id,
+                                    FC_STACK_OF(TLS_CIPHER) *cipherstack)
+{
+    FC_STACK_OF(TLS_CIPHER) *tmp_cipher_list = sk_TLS_CIPHER_dup(cipherstack);
+
+    if (tmp_cipher_list == NULL) {
+        return 0;
+    }
+
+    sk_TLS_CIPHER_free(*cipher_list_by_id);
+    *cipher_list_by_id = tmp_cipher_list;
+
+    (void)sk_TLS_CIPHER_set_cmp_func(*cipher_list_by_id, tls_cipher_ptr_id_cmp);
+    sk_TLS_CIPHER_sort(*cipher_list_by_id);
+
+    return 1;
+}
 
 FC_STACK_OF(TLS_CIPHER) *
 tls_create_cipher_list(const TLS_METHOD *method, FC_STACK_OF(TLS_CIPHER) 
@@ -38,6 +71,11 @@ tls_create_cipher_list(const TLS_METHOD *method, FC_STACK_OF(TLS_CIPHER)
         }
     }
  
+    if (!update_cipher_list_by_id(cipher_list_by_id, cipherstack)) {
+        FC_LOG("Update cipher list by id failed!\n");
+        return NULL;
+    }
+
     *cipher_list = cipherstack;
     return cipherstack;
 }

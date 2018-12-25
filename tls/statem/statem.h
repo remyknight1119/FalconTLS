@@ -133,6 +133,13 @@ typedef struct tls_process_message_t {
     process_message_f       pm_proc;
 } TLS_PROCESS_MESSAGE;
 
+typedef int (*process_key_exchange_f)(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey);
+
+typedef struct tls_process_key_exchange_t {
+    uint64_t                ke_alg_k;
+    process_key_exchange_f  ke_proc;
+} TLS_PROCESS_KEY_EXCHANGE;
+
 typedef struct tls_statem_t {
     MSG_FLOW_STATE      sm_state;
     WRITE_STATE         sm_write_state;
@@ -168,6 +175,8 @@ int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
         int *m_type, TLS_CONSTRUCT_MESSAGE *array, size_t size);
 process_message_f tls_stream_get_process_message(TLS *s,
         TLS_PROCESS_MESSAGE *array, size_t size);
+process_key_exchange_f tls_stream_get_process_key_exchange(uint64_t alg_k,
+            TLS_PROCESS_KEY_EXCHANGE *array, size_t size);
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
 int tls_get_message_header(TLS *s, int *mt);
