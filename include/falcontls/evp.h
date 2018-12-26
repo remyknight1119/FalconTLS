@@ -2,6 +2,7 @@
 #define __FC_EVP_H__
 
 #include <falcontls/types.h>
+#include <falcontls/objects.h>
 
 #include <openssl/evp.h>
 
@@ -10,9 +11,43 @@
 #define FC_EVP_MAX_IV_LENGTH            16
 #define FC_EVP_MAX_BLOCK_LENGTH         32
 
-#define FC_EVP_PKEY_RSA             EVP_PKEY_RSA
-#define FC_EVP_PKEY_DH              EVP_PKEY_DH
-#define FC_EVP_PKEY_EC              EVP_PKEY_EC
+#define FC_EVP_PKEY_NONE            NID_undef
+#define FC_EVP_PKEY_RSA             NID_rsaEncryption
+#define FC_EVP_PKEY_RSA2            NID_rsa
+#define FC_EVP_PKEY_RSA_PSS         NID_rsassaPss
+#define FC_EVP_PKEY_DSA             NID_dsa
+#define FC_EVP_PKEY_DSA1            NID_dsa_2
+#define FC_EVP_PKEY_DSA2            NID_dsaWithSHA
+#define FC_EVP_PKEY_DSA3            NID_dsaWithSHA1
+#define FC_EVP_PKEY_DSA4            NID_dsaWithSHA1_2
+#define FC_EVP_PKEY_DH              NID_dhKeyAgreement
+#define FC_EVP_PKEY_DHX             NID_dhpublicnumber
+#define FC_EVP_PKEY_EC              NID_X9_62_id_ecPublicKey
+#define FC_EVP_PKEY_SM2             NID_sm2
+#define FC_EVP_PKEY_HMAC            NID_hmac
+#define FC_EVP_PKEY_CMAC            NID_cmac
+#define FC_EVP_PKEY_SCRYPT          NID_id_scrypt
+#define FC_EVP_PKEY_TLS1_PRF        NID_tls1_prf
+#define FC_EVP_PKEY_HKDF            NID_hkdf
+#define FC_EVP_PKEY_POLY1305        NID_poly1305
+#define FC_EVP_PKEY_SIPHASH         NID_siphash
+#define FC_EVP_PKEY_X25519          NID_X25519
+#define FC_EVP_PKEY_ED25519         NID_ED25519
+#define FC_EVP_PKEY_X448            NID_X448
+#define FC_EVP_PKEY_ED448           NID_ED448
+
+#define FC_EVP_PKEY_OP_UNDEFINED           0
+#define FC_EVP_PKEY_OP_PARAMGEN            (1<<1)
+#define FC_EVP_PKEY_OP_KEYGEN              (1<<2)
+#define FC_EVP_PKEY_OP_SIGN                (1<<3)
+#define FC_EVP_PKEY_OP_VERIFY              (1<<4)
+#define FC_EVP_PKEY_OP_VERIFYRECOVER       (1<<5)
+#define FC_EVP_PKEY_OP_SIGNCTX             (1<<6)
+#define FC_EVP_PKEY_OP_VERIFYCTX           (1<<7)
+#define FC_EVP_PKEY_OP_ENCRYPT             (1<<8)
+#define FC_EVP_PKEY_OP_DECRYPT             (1<<9)
+#define FC_EVP_PKEY_OP_DERIVE              (1<<10)
+
 
 /*
  * Cipher handles any and all padding logic as well as finalisation.
@@ -52,6 +87,12 @@ extern ulong FC_EVP_CIPHER_flags(const FC_EVP_CIPHER *cipher);
 extern const FC_EVP_MD *FC_EVP_MD_CTX_md(const FC_EVP_MD_CTX *ctx);
 extern int FC_EVP_MD_size(const FC_EVP_MD *md);
 extern int FC_EVP_PKEY_assign(FC_EVP_PKEY *pkey, int type, void *key);
+extern FC_EVP_PKEY_CTX *FC_EVP_PKEY_CTX_new_id(int id, FC_ENGINE *e);
+extern int FC_EVP_PKEY_paramgen_init(FC_EVP_PKEY_CTX *ctx);
+extern int FC_EVP_PKEY_CTX_ctrl(FC_EVP_PKEY_CTX *ctx, int keytype, int optype,
+            int cmd, int p1, void *p2);
+extern int FC_EVP_PKEY_paramgen(FC_EVP_PKEY_CTX *ctx, FC_EVP_PKEY **ppkey);
+extern void FC_EVP_PKEY_CTX_free(FC_EVP_PKEY_CTX *ctx);
 
 
 #endif

@@ -1,0 +1,28 @@
+#ifndef __FC_EC_H__
+#define __FC_EC_H__
+
+#include <falcontls/evp.h>
+
+enum {
+    FC_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID = (EVP_PKEY_ALG_CTRL + 1),
+    FC_EVP_PKEY_CTRL_EC_PARAM_ENC,
+    FC_EVP_PKEY_CTRL_EC_ECDH_COFACTOR,
+    FC_EVP_PKEY_CTRL_EC_KDF_TYPE,
+    FC_EVP_PKEY_CTRL_EC_KDF_MD,
+    FC_EVP_PKEY_CTRL_GET_EC_KDF_MD,
+    FC_EVP_PKEY_CTRL_EC_KDF_OUTLEN,
+    FC_EVP_PKEY_CTRL_GET_EC_KDF_OUTLEN,
+    FC_EVP_PKEY_CTRL_EC_KDF_UKM,
+    FC_EVP_PKEY_CTRL_GET_EC_KDF_UKM,
+    FC_EVP_PKEY_CTRL_SET1_ID,
+    FC_EVP_PKEY_CTRL_GET1_ID,
+    FC_EVP_PKEY_CTRL_GET1_ID_LEN,
+};
+
+#define FC_EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, nid) \
+            FC_EVP_PKEY_CTX_ctrl(ctx, FC_EVP_PKEY_EC, \
+                    FC_EVP_PKEY_OP_PARAMGEN|FC_EVP_PKEY_OP_KEYGEN, \
+                    FC_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, NULL)
+
+
+#endif

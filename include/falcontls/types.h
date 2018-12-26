@@ -18,9 +18,11 @@ typedef struct fc_buf_mem_t FC_BUF_MEM;
 typedef struct fc_evp_peky_t FC_EVP_PKEY;
 typedef struct fc_evp_cipher_t FC_EVP_CIPHER;
 typedef struct fc_evp_cipher_ctx_t FC_EVP_CIPHER_CTX;
+typedef struct fc_evp_pkey_ctx_t FC_EVP_PKEY_CTX;
 typedef struct fc_evp_md_t FC_EVP_MD;
 typedef struct fc_evp_md_ctx_t FC_EVP_MD_CTX;
 typedef struct fc_x509_t FC_X509;
+typedef struct fc_engine_t FC_ENGINE;
 
 typedef struct FC_ASN1_ITEM_t FC_ASN1_ITEM;
 

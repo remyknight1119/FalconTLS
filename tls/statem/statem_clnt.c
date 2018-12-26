@@ -441,7 +441,38 @@ err:
 static int
 tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey)
 {
+    PACKET          encoded_pt = {};
+    unsigned int    curve_type = 0;
+    unsigned int    curve_id = 0;
+
     FC_LOG("in\n");
+    /*
+     * Extract elliptic curve parameters and the server's ephemeral ECDH
+     * public key. We only support named (not generic) curves and
+     * ECParameters in this case is just three bytes.
+     */
+    if (!PACKET_get_1(pkt, &curve_type) || !PACKET_get_net_2(pkt, &curve_id)) {
+        return 0;
+    }
+ 
+   /*
+     * Check curve is named curve type and one of our preferences, if not
+     * server has sent an invalid curve.
+     */
+    if (curve_type != NAMED_CURVE_TYPE
+            || !tls1_check_group_id(s, curve_id, 1)) {
+        return 0;
+    }
+
+    if ((s->tls_peer_key = tls_generate_param_group(curve_id)) == NULL) {
+        return 0;
+    }
+
+    if (!PACKET_get_length_prefixed_1(pkt, &encoded_pt)) {
+        return 0;
+    }
+
+    FC_LOG("next\n");
     return 1;
 }
 

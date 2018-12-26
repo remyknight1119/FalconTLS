@@ -171,6 +171,7 @@ struct tls_t {
     size_t                      tls_max_pipelines;
     RECORD_LAYER                tls_rlayer;
     TLS_STATE                   tls_state;
+    FC_EVP_PKEY                 *tls_peer_key;
     uint32_t                    tls_max_send_fragment;
     union {
         TLS1_2_HANDSHAKE        tls1_2;
@@ -195,6 +196,26 @@ typedef struct tls_enc_method_t {
     size_t      em_hhlen;
     uint32_t    em_enc_flags;
 } TLS_ENC_METHOD;
+
+typedef struct tls_group_info_t {
+    int         gi_nid;         /* Curve NID */
+    int         gi_secbits;     /* Bits of security (from SP800-57) */
+    uint16_t    gi_flags;       /* Flags: currently just group type */
+} TLS_GROUP_INFO;
+
+/* flags values */
+#define TLS_CURVE_PRIME         0x0
+#define TLS_CURVE_CHAR2         0x1
+#define TLS_CURVE_CUSTOM        0x2
+#define TLS_CURVE_TYPE          0x3 /* Mask for group type */
+
+
+/*
+ * From ECC-TLS draft, used in encoding the curve type in ECParameters
+ */
+#define EXPLICIT_PRIME_CURVE_TYPE   1
+#define EXPLICIT_CHAR2_CURVE_TYPE   2
+#define NAMED_CURVE_TYPE            3
 
 typedef struct tls_cert_pkey_t {
     FC_X509                 *cp_x509;
@@ -298,6 +319,8 @@ void tls1_get_formatlist(TLS *s, const unsigned char **pformats,
                          size_t *num_formats);
 void tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
                         size_t *pgroupslen);
+int tls1_check_group_id(TLS *s, uint16_t group_id, int check_own_groups);
+FC_EVP_PKEY *tls_generate_param_group(uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
 
 
