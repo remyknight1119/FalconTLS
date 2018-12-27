@@ -226,3 +226,16 @@ tls_generate_param_group(uint16_t id)
     return pkey;
 }
 
+int
+tls12_check_peer_sigalg(TLS *s, uint16_t sig, FC_EVP_PKEY *pkey)
+{
+    int     pkeyid = 0;
+    
+    pkeyid = FC_EVP_PKEY_id(pkey);
+    if (pkeyid == -1) {
+        return -1;
+    }
+
+    return 1;
+}
+

@@ -74,4 +74,8 @@ extern void FalconTLS_add_all_algorighms(void);
 extern const TLS_METHOD *FCTLS_method(void);
 extern FC_STACK_OF(TLS_CIPHER) *FCTLS_get_ciphers(const TLS *s);
 
+extern TLS_SESSION *TLS_SESSION_new(void);
+extern void TLS_SESSION_free(TLS_SESSION *ss);
+
+
 #endif

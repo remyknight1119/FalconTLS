@@ -9,6 +9,5 @@
 int
 FC_X509_up_ref(FC_X509 *x)
 {
-    //return X509_up_ref((X509 *)x);
-    return 1;
+    return X509_up_ref((X509 *)x);
 }

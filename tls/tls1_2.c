@@ -16,6 +16,7 @@ TLS_ENC_METHOD const TLSv1_2_enc_data = {
     .em_set_handshake_header = tls1_2_set_handshake_header,
     .em_hhlen = TLS_HM_HEADER_LENGTH,
     .em_do_write = tls1_2_handshake_write,
+    .em_enc_flags = TLS_ENC_FLAG_SIGALGS,
 };
 
 static TLS_CIPHER tls1_2_ciphers[] = {

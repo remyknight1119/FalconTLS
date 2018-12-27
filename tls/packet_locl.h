@@ -124,6 +124,38 @@ static inline int PACKET_copy_bytes(PACKET *pkt, void *data, size_t len)
     return 1;
 }
 
+/*
+ * Peek ahead and initialize |subpkt| with the next |len| bytes read from |pkt|.
+ * Data is not copied: the |subpkt| packet will share its underlying buffer with
+ * the original |pkt|, so data wrapped by |pkt| must outlive the |subpkt|.
+ */
+static inline int PACKET_peek_sub_packet(const PACKET *pkt,
+                                PACKET *subpkt, size_t len)
+{
+    if (PACKET_remaining(pkt) < len) {
+        return 0;
+    }
+
+    return PACKET_buf_init(subpkt, pkt->pk_curr, len);
+}
+
+/*
+ * Initialize |subpkt| with the next |len| bytes read from |pkt|. Data is not
+ * copied: the |subpkt| packet will share its underlying buffer with the
+ * original |pkt|, so data wrapped by |pkt| must outlive the |subpkt|.
+ */
+static inline int PACKET_get_sub_packet(PACKET *pkt,
+                                PACKET *subpkt, size_t len)
+{
+    if (!PACKET_peek_sub_packet(pkt, subpkt, len)) {
+        return 0;
+    }
+
+    packet_forward(pkt, len);
+
+    return 1;
+}
+
 static inline int PACKET_peek_bytes(const PACKET *pkt,
                                 const unsigned char **data,
                                 size_t len)

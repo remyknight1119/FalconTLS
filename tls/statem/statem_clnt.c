@@ -242,6 +242,7 @@ tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
 {
     client_hello_t  *ch = NULL;
     unsigned char   *p = NULL;
+    TLS_SESSION     *sess = s->tls_session;
     int             i = 0;
 
     FC_LOG("in\n");
@@ -251,6 +252,11 @@ tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
         goto err;
     }
 
+    if (sess == NULL) {
+        if (!tls_get_new_session(s, 1)) {
+            goto err;
+        }
+    }
     ch->ch_version = FC_HTONS(s->tls_version);
     p = (void *)(ch + 1);
     /* Ciphers supported */
@@ -383,6 +389,7 @@ tls1_2_process_server_certificate(TLS *s,
 {
     FC_STACK_OF(FC_X509)    *sk = NULL;
     FC_X509                 *x = NULL;
+    FC_EVP_PKEY             *pkey = NULL;
     const unsigned char     *certstart = NULL;
     const unsigned char     *certbytes = NULL;
     unsigned long           cert_list_len = 0;
@@ -429,7 +436,15 @@ tls1_2_process_server_certificate(TLS *s,
     }
 
     x = sk_FC_X509_value(sk, 0);
-    //X509_up_ref(x);
+    pkey = FC_X509_get0_pubkey(x); 
+    if (pkey == NULL) {
+        FC_LOG("pkey == NULL\n");
+        goto err;
+    }
+    FC_X509_free(s->tls_session->se_peer);
+    FC_X509_up_ref(x);
+    s->tls_session->se_peer = x;
+    x = NULL;
     ret = MSG_PROCESS_CONTINUE_READING;
 
 err:
@@ -442,6 +457,7 @@ static int
 tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey)
 {
     PACKET          encoded_pt = {};
+    uint64_t        alg_auth = 0;
     unsigned int    curve_type = 0;
     unsigned int    curve_id = 0;
 
@@ -472,6 +488,27 @@ tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey)
         return 0;
     }
 
+    if (!FC_EVP_PKEY_set1_tls_encodedpoint(s->tls_peer_key,
+                                        PACKET_data(&encoded_pt),
+                                        PACKET_remaining(&encoded_pt))) {
+        return 0;
+    }
+
+    alg_auth = s->tls_cipher->cp_algorithm_auth;
+    /*
+     * The ECC/TLS specification does not mention the use of DSA to sign
+     * ECParameters in the server key exchange message. We do support RSA
+     * and ECDSA.
+     */
+    if (alg_auth & TLS_aECDSA) {
+        FC_LOG("ECDSA\n");
+        *pkey = FC_X509_get0_pubkey(s->tls_session->se_peer);
+    } else if (alg_auth & TLS_aRSA) {
+        FC_LOG("RSA\n");
+        *pkey = FC_X509_get0_pubkey(s->tls_session->se_peer);
+    }
+    /* else anonymous ECDH, so no certificate or pkey. */
+
     FC_LOG("next\n");
     return 1;
 }
@@ -481,10 +518,14 @@ tls1_2_process_key_exchange(TLS *s, PACKET *pkt)
 {
     FC_EVP_PKEY             *pkey = NULL;
     process_key_exchange_f  proc = NULL;
+    PACKET                  save_param_start = {};
+    //PACKET                  signature = {};
+    PACKET                  params = {};
     uint64_t                alg_k = 0;
-    MSG_PROCESS_RETURN      ret = MSG_PROCESS_ERROR;
+    unsigned int            sigalg = 0;
 
     FC_LOG("in\n");
+    save_param_start = *pkt;
     alg_k = s->tls_cipher->cp_algorithm_mkey;
     proc = tls_stream_get_process_key_exchange(alg_k,
             tls12_client_process_key_exchange, 
@@ -497,7 +538,32 @@ tls1_2_process_key_exchange(TLS *s, PACKET *pkt)
         goto err;
     }
 
+    if (pkey != NULL) {
+        /*
+         * |pkt| now points to the beginning of the signature, so the difference
+         * equals the length of the parameters.
+         */
+        if (!PACKET_get_sub_packet(&save_param_start, &params,
+                                   PACKET_remaining(&save_param_start) -
+                                   PACKET_remaining(pkt))) {
+            goto err;
+        }
+
+        if (TLS_USE_SIGALGS(s)) {
+            if (!PACKET_get_net_2(pkt, &sigalg)) {
+                goto err;
+            }
+ 
+            if (tls12_check_peer_sigalg(s, sigalg, pkey) <= 0) {
+                goto err;
+            }
+        }
+
+    } else {
+    }
+
+    return MSG_PROCESS_CONTINUE_READING;
 err:
-    return ret;
+    return MSG_PROCESS_ERROR;
 }
 

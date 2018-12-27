@@ -151,6 +151,10 @@ typedef struct tls1_2_handshake_t {
     TLS1_2_RANDOM   hk_random;
 } TLS1_2_HANDSHAKE;
 
+struct tls_session_t {
+    FC_X509     *se_peer;
+};
+
 struct tls_t {
     TLS_STATEM                  tls_statem;
     bool                        tls_server;
@@ -172,6 +176,7 @@ struct tls_t {
     RECORD_LAYER                tls_rlayer;
     TLS_STATE                   tls_state;
     FC_EVP_PKEY                 *tls_peer_key;
+    TLS_SESSION                 *tls_session;
     uint32_t                    tls_max_send_fragment;
     union {
         TLS1_2_HANDSHAKE        tls1_2;
@@ -196,6 +201,20 @@ typedef struct tls_enc_method_t {
     size_t      em_hhlen;
     uint32_t    em_enc_flags;
 } TLS_ENC_METHOD;
+
+#define TLS_ENC_FLAG_EXPLICIT_IV        0x1
+/* Uses signature algorithms extension */
+#define TLS_ENC_FLAG_SIGALGS            0x2
+/* Uses SHA256 default PRF */
+#define TLS_ENC_FLAG_SHA256_PRF         0x4
+/* Is DTLS */
+#define TLS_ENC_FLAG_DTLS               0x8
+/*
+ * Allow TLS 1.2 ciphersuites: applies to DTLS 1.2 as well as TLS 1.2: may
+ * apply to others in future.
+ */
+#define TLS_ENC_FLAG_TLS1_2_CIPHERS     0x10
+
 
 typedef struct tls_group_info_t {
     int         gi_nid;         /* Curve NID */
@@ -271,6 +290,11 @@ struct tls_method_t {
     int                     (*md_tls_version) (void);
 };
 
+#define TLS_USE_ENC_FLAG(s, flag)  \
+            (s->tls_method->md_tls_enc->em_enc_flags & flag)
+
+#define TLS_USE_SIGALGS(s)      TLS_USE_ENC_FLAG(s, TLS_ENC_FLAG_SIGALGS)
+
 #define TLS_CIPHER_LEN  2
 
 struct tls_cipher_t {
@@ -312,6 +336,7 @@ TLS_ENC_METHOD const TLSv1_2_enc_data;
 
 
 int tls1_2_handshake_write(TLS *s);
+int tls12_check_peer_sigalg(TLS *s, uint16_t sig, FC_EVP_PKEY *pkey);
 int tls_do_write(TLS *s, int type);
 void tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt);
 FC_STACK_OF(TLS_CIPHER) *tls_get_ciphers_by_id(TLS *s);
@@ -322,6 +347,6 @@ void tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
 int tls1_check_group_id(TLS *s, uint16_t group_id, int check_own_groups);
 FC_EVP_PKEY *tls_generate_param_group(uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
-
+int tls_get_new_session(TLS *s, int session);
 
 #endif

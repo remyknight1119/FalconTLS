@@ -109,6 +109,10 @@ FCTLS_free(TLS *s)
         s->tls_method->md_tls_free(s);
     }
 
+    if (s->tls_session != NULL) {
+        TLS_SESSION_free(s->tls_session);
+    }
+
     FALCONTLS_free(s);
 }
 
