@@ -4,6 +4,7 @@
 #include <falcontls/ec.h>
 #include <internal/buffer.h>
 #include <fc_lib.h>
+#include <fc_log.h>
 
 #include "packet_locl.h"
 #include "tls_locl.h"
@@ -16,7 +17,11 @@
  * table: the index of each entry is one less than the TLS curve id.
  */
 static const TLS_GROUP_INFO nid_list[] = {
-    {NID_sect163k1, 80, TLS_CURVE_CHAR2}, /* sect163k1 (1) */
+    {
+        .gi_nid = NID_sect163k1,
+        .gi_secbits = 80,
+        .gi_flags = TLS_CURVE_CHAR2,
+    }, /* sect163k1 (1) */
     {NID_sect163r1, 80, TLS_CURVE_CHAR2}, /* sect163r1 (2) */
     {NID_sect163r2, 80, TLS_CURVE_CHAR2}, /* sect163r2 (3) */
     {NID_sect193r1, 80, TLS_CURVE_CHAR2}, /* sect193r1 (4) */
@@ -63,6 +68,19 @@ static const uint16_t eccurves_default[] = {
     TLSEXT_ECCURVE_SECP384r1,
 };
 
+static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
+    {
+        .sl_name = "rsa_pkcs1_sha1",
+        .sl_sigalg = TLSEXT_SIGALG_rsa_pkcs1_sha1,
+        .sl_hash = NID_sha1,
+        .sl_hash_idx = TLS_MD_SHA1_IDX,
+        .sl_sig = FC_EVP_PKEY_RSA,
+        .sl_sig_idx = TLS_PKEY_RSA,
+        .sl_sigandhash = NID_sha1WithRSAEncryption,
+        .sl_curve = NID_undef,
+    },
+};
+
 void
 tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt)
 {
@@ -101,17 +119,19 @@ tls1_group_id_lookup(uint16_t group_id)
     return &nid_list[group_id - 1];
 }
 
-#if 0
-static uint16_t tls1_nid2group_id(int nid)
+static uint16_t
+tls1_nid2group_id(int nid)
 {
-    size_t i;
-    for (i = 0; i < OSSL_NELEM(nid_list); i++) {
-        if (nid_list[i].nid == nid)
+    size_t      i = 0;
+
+    for (i = 0; i < FC_ARRAY_SIZE(nid_list); i++) {
+        if (nid_list[i].gi_nid == nid) {
             return (uint16_t)(i + 1);
+        }
     }
+
     return 0;
 }
-#endif
 
 void
 tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
@@ -226,16 +246,122 @@ tls_generate_param_group(uint16_t id)
     return pkey;
 }
 
+/* Lookup TLS signature algorithm */
+static const SIGALG_LOOKUP *
+tls1_lookup_sigalg(uint16_t sigalg)
+{
+    const SIGALG_LOOKUP *s = NULL;
+    size_t              i = 0;
+
+    for (i = 0, s = sigalg_lookup_tbl; i < FC_ARRAY_SIZE(sigalg_lookup_tbl);
+         i++, s++) {
+        if (s->sl_sigalg == sigalg) {
+            return s;
+        }
+    }
+
+    return NULL;
+}
+
+static int
+tls1_check_pkey_comp(TLS *s, FC_EVP_PKEY *pkey)
+{
+    const FC_EC_KEY     *ec = NULL;
+    const FC_EC_GROUP   *grp = NULL;
+    uint8_t             comp_id = 0;
+    int                 field_type = 0;
+    int                 i = 0;
+
+    if (FC_EVP_PKEY_id(pkey) != FC_EVP_PKEY_EC) {
+        return 1;
+    }
+
+    ec = FC_EVP_PKEY_get0_EC_KEY(pkey);
+    if (ec == NULL) {
+        return 0;
+    }
+
+    grp = FC_EC_KEY_get0_group(ec);
+    if (grp == NULL) {
+        return 0;
+    }
+
+    if (FC_EC_KEY_get_conv_form(ec) == FC_POINT_CONVERSION_UNCOMPRESSED) {
+        comp_id = TLSEXT_ECPOINTFORMAT_uncompressed;
+    } else {
+        field_type = FC_EC_METHOD_get_field_type(FC_EC_GROUP_method_of(grp));
+        if (field_type == NID_X9_62_prime_field) {
+            comp_id = TLSEXT_ECPOINTFORMAT_ansiX962_compressed_prime;
+        } else if (field_type == NID_X9_62_characteristic_two_field) {
+            comp_id = TLSEXT_ECPOINTFORMAT_ansiX962_compressed_char2;
+        } else {
+            return 0;
+        }
+    }
+
+    if (s->tls_session->se_ext.ecpointformats == NULL) {
+        return 1;
+    }
+
+    for (i = 0; i < s->tls_session->se_ext.ecpointformats_len; i++) {
+        if (s->tls_session->se_ext.ecpointformats[i] == comp_id) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static uint16_t
+tls1_get_group_id(FC_EVP_PKEY *pkey)
+{
+    FC_EC_KEY           *ec = FC_EVP_PKEY_get0_EC_KEY(pkey);
+    const FC_EC_GROUP   *grp = NULL;
+
+    if (ec == NULL) {
+        return 0;
+    }
+    grp = FC_EC_KEY_get0_group(ec);
+    if (grp == NULL) {
+        return 0;
+    }
+
+    return tls1_nid2group_id(FC_EC_GROUP_get_curve_name(grp));
+}
+
 int
 tls12_check_peer_sigalg(TLS *s, uint16_t sig, FC_EVP_PKEY *pkey)
 {
-    int     pkeyid = 0;
+    const SIGALG_LOOKUP     *lu = NULL;
+    size_t                  cidx = 0;
+    int                     pkeyid = 0;
     
     pkeyid = FC_EVP_PKEY_id(pkey);
     if (pkeyid == -1) {
         return -1;
     }
 
+    lu = tls1_lookup_sigalg(sig);
+    if (lu == NULL) {
+        FC_LOG("Lookup sigalg failed\n");
+        return 0;
+    }
+
+    if (!tls_cert_lookup_by_nid(FC_EVP_PKEY_id(pkey), &cidx) ||
+            lu->sl_sig_idx != (int)cidx) {
+        return 0;
+    }
+
+    if (pkeyid == FC_EVP_PKEY_EC) {
+        if (!tls1_check_pkey_comp(s, pkey)) {
+            return 0;
+        }
+        if (!tls1_check_group_id(s, tls1_get_group_id(pkey), 1)) {
+        }
+    }
+
+    s->tls_handshake.tls1_2.hk_peer_sigalg = lu;
+    FC_LOG("next\n");
     return 1;
 }
 

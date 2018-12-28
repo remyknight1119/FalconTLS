@@ -84,6 +84,13 @@
 /* ECDSA auth*/
 #define TLS_aECDSA              0x00000002U
 
+#define TLS_aGOST01             0x00000004U
+
+#define TLS_aGOST12             0x00000008U
+
+#define TLS_aPSK                0x00000010U
+
+
 /* Bits for algorithm_enc (symmetric encryption) */
 #define TLS_AES128              0x00000001U
 #define TLS_AES256              0x00000002U

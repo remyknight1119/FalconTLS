@@ -116,6 +116,35 @@
 /* Temporary extension type */
 #define TLSEXT_TYPE_renegotiate                 0xff01
 
+/* Sigalgs values */
+#define TLSEXT_SIGALG_ecdsa_secp256r1_sha256                    0x0403
+#define TLSEXT_SIGALG_ecdsa_secp384r1_sha384                    0x0503
+#define TLSEXT_SIGALG_ecdsa_secp521r1_sha512                    0x0603
+#define TLSEXT_SIGALG_ecdsa_sha224                              0x0303
+#define TLSEXT_SIGALG_ecdsa_sha1                                0x0203
+#define TLSEXT_SIGALG_rsa_pss_rsae_sha256                       0x0804
+#define TLSEXT_SIGALG_rsa_pss_rsae_sha384                       0x0805
+#define TLSEXT_SIGALG_rsa_pss_rsae_sha512                       0x0806
+#define TLSEXT_SIGALG_rsa_pss_pss_sha256                        0x0809
+#define TLSEXT_SIGALG_rsa_pss_pss_sha384                        0x080a
+#define TLSEXT_SIGALG_rsa_pss_pss_sha512                        0x080b
+#define TLSEXT_SIGALG_rsa_pkcs1_sha256                          0x0401
+#define TLSEXT_SIGALG_rsa_pkcs1_sha384                          0x0501
+#define TLSEXT_SIGALG_rsa_pkcs1_sha512                          0x0601
+#define TLSEXT_SIGALG_rsa_pkcs1_sha224                          0x0301
+#define TLSEXT_SIGALG_rsa_pkcs1_sha1                            0x0201
+#define TLSEXT_SIGALG_dsa_sha256                                0x0402
+#define TLSEXT_SIGALG_dsa_sha384                                0x0502
+#define TLSEXT_SIGALG_dsa_sha512                                0x0602
+#define TLSEXT_SIGALG_dsa_sha224                                0x0302
+#define TLSEXT_SIGALG_dsa_sha1                                  0x0202
+#define TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256       0xeeee
+#define TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512       0xefef
+#define TLSEXT_SIGALG_gostr34102001_gostr3411                   0xeded
+
+#define TLSEXT_SIGALG_ed25519                                   0x0807
+#define TLSEXT_SIGALG_ed448                                     0x0808
+
 
 #define TLS_ST_READ_HEADER                      0xF0
 #define TLS_ST_READ_BODY                        0xF1
@@ -134,6 +163,47 @@
 #define l2n3(l,c)       (((c)[0]=(uint8_t)(((l)>>16)&0xff), \
                            (c)[1]=(uint8_t)(((l)>> 8)&0xff), \
                            (c)[2]=(uint8_t)(((l)    )&0xff)),(c)+=3)
+/*
+ * When adding new digest in the ssl_ciph.c and increment SSL_MD_NUM_IDX make
+ * sure to update this constant too
+ */
+enum {
+    TLS_MD_MD5_IDX,
+    TLS_MD_SHA1_IDX,
+    TLS_MD_GOST94_IDX,
+    TLS_MD_GOST89MAC_IDX,
+    TLS_MD_SHA256_IDX,
+    TLS_MD_SHA384_IDX,
+    TLS_MD_GOST12_256_IDX,
+    TLS_MD_GOST89MAC12_IDX,
+    TLS_MD_GOST12_512_IDX,
+    TLS_MD_MD5_SHA1_IDX,
+    TLS_MD_SHA224_IDX,
+    TLS_MD_SHA512_IDX,
+    TLS_MAX_DIGEST,
+};
+
+enum {
+    TLS_PKEY_RSA,
+    TLS_PKEY_RSA_PSS_SIGN,
+    TLS_PKEY_DSA_SIGN,
+    TLS_PKEY_ECC,
+    TLS_PKEY_GOST01,
+    TLS_PKEY_GOST12_256,
+    TLS_PKEY_GOST12_512,
+    TLS_PKEY_ED25519,
+    TLS_PKEY_ED448,
+    TLS_PKEY_NUM,
+};
+
+/*
+ * Structure containing table entry of certificate info corresponding to
+ * CERT_PKEY entries
+ */
+typedef struct {
+    int         cl_nid; /* NID of pubic key algorithm */
+    uint32_t    cl_amask; /* authmask corresponding to key type */
+} TLS_CERT_LOOKUP;
 
 typedef struct tls_state_t {
     size_t      st_message_size;
@@ -147,12 +217,41 @@ typedef struct tls1_2_random_t {
     uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
 } TLS1_2_RANDOM;
 
+/*
+ * Structure containing table entry of values associated with the signature
+ * algorithms (signature scheme) extension
+*/
+typedef struct sigalg_lookup_t {
+    /* TLS 1.3 signature scheme name */
+    const char  *sl_name;
+    /* Raw value used in extension */
+    uint16_t    sl_sigalg;
+    /* NID of hash algorithm or NID_undef if no hash */
+    int         sl_hash;
+    /* Index of hash algorithm or -1 if no hash algorithm */
+    int         sl_hash_idx;
+    /* NID of signature algorithm */
+    int         sl_sig;
+    /* Index of signature algorithm */
+    int         sl_sig_idx;
+    /* Combined hash and signature NID, if any */
+    int         sl_sigandhash;
+    /* Required public key curve (ECDSA only) */
+    int         sl_curve;
+} SIGALG_LOOKUP;
+
+
 typedef struct tls1_2_handshake_t {
-    TLS1_2_RANDOM   hk_random;
+    TLS1_2_RANDOM           hk_random;
+    const SIGALG_LOOKUP     *hk_peer_sigalg;
 } TLS1_2_HANDSHAKE;
 
 struct tls_session_t {
     FC_X509     *se_peer;
+    struct {
+        size_t      ecpointformats_len;
+        uint8_t     *ecpointformats; /* peer's list */
+    } se_ext;
 };
 
 struct tls_t {
@@ -348,5 +447,6 @@ int tls1_check_group_id(TLS *s, uint16_t group_id, int check_own_groups);
 FC_EVP_PKEY *tls_generate_param_group(uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
 int tls_get_new_session(TLS *s, int session);
+int tls_cert_lookup_by_nid(int nid, size_t *pidx);
 
 #endif

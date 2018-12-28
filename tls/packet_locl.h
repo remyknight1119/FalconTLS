@@ -199,6 +199,30 @@ static inline int PACKET_get_length_prefixed_1(PACKET *pkt, PACKET *subpkt)
     return 1;
 }
 
+/*
+ * Like PACKET_get_length_prefixed_1, but additionally, fails when there are
+ * leftover bytes in |pkt|.
+ */
+static inline int PACKET_as_length_prefixed_1(PACKET *pkt, PACKET *subpkt)
+{
+    const unsigned char *data = NULL;
+    unsigned int        length = 0;
+    PACKET              tmp = *pkt;
+
+    if (!PACKET_get_1(&tmp, &length) ||
+        !PACKET_get_bytes(&tmp, &data, (size_t)length) ||
+        PACKET_remaining(&tmp) != 0) {
+        return 0;
+    }
+
+    *pkt = tmp;
+    subpkt->pk_curr = data;
+    subpkt->pk_remaining = length;
+
+    return 1;
+}
+
+
 static inline int PACKET_as_length_prefixed_2(PACKET *pkt, PACKET *subpkt)
 {
     const unsigned char *data = NULL;

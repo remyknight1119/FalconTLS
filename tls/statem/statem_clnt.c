@@ -370,6 +370,8 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
         goto err;
     }
  
+    //tls_collect_extensions
+
     if (!set_client_ciphersuite(s, cipherchars)) {
         goto err;
     }

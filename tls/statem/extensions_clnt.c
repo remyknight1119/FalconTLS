@@ -1,4 +1,5 @@
 
+#include <fc_log.h>
 
 #include "tls_locl.h"
 #include "cipher.h"
@@ -23,6 +24,14 @@ int
 tls_parse_stoc_ec_pt_formats(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx)
 {
+    PACKET      ecptformatlist = {};
+    //size_t      ecpointformats_len = 0;
+
+    //FC_LOG("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\n");
+    if (!PACKET_as_length_prefixed_1(pkt, &ecptformatlist)) {
+        return 0;
+    }
+
     return 1;
 }
 

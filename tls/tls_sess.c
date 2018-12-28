@@ -22,6 +22,9 @@ TLS_SESSION_free(TLS_SESSION *ss)
         return;
     }
 
+    if (ss->se_ext.ecpointformats != NULL) {
+        FALCONTLS_free(ss->se_ext.ecpointformats);
+    }
     FALCONTLS_free(ss);
 }
 
