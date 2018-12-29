@@ -14,6 +14,8 @@ extern void *FC_CRYPTO_malloc(size_t num, const char *file, int line);
 extern void *FC_CRYPTO_calloc(size_t num, const char *file, int line);
 extern void *FC_CRYPTO_realloc(void *str, size_t num, 
             const char *file, int line);
+extern void *FC_CRYPTO_memdup(void *data, size_t num,
+            const char *file, int line);
 extern void FC_CRYPTO_free(void *ptr, const char *file, int line);
 
 #define FALCONTLS_malloc(size)          \
@@ -22,6 +24,8 @@ extern void FC_CRYPTO_free(void *ptr, const char *file, int line);
             FC_CRYPTO_calloc(size, __FUNCTION__, __LINE__)
 #define FALCONTLS_realloc(ptr, size)    \
             FC_CRYPTO_realloc(ptr, size, __FUNCTION__, __LINE__)
+#define FALCONTLS_memdup(ptr, size)     \
+            FC_CRYPTO_memdup((ptr), size, __FUNCTION__, __LINE__)
 #define FALCONTLS_free(ptr)     FC_CRYPTO_free(ptr, __FUNCTION__, __LINE__)
 
 #endif

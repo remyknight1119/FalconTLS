@@ -35,7 +35,7 @@
 #define TLS_MT_CERTIFICATE              11
 #define TLS_MT_SERVER_KEY_EXCHANGE      12
 #define TLS_MT_CERTIFICATE_REQUEST      13
-#define TLS_MT_SERVER_HELLO_DONE        14
+#define TLS_MT_SERVER_DONE              14
 #define TLS_MT_CERTIFICATE_VERIFY       15
 #define TLS_MT_CLIENT_KEY_EXCHANGE      16
 #define TLS_MT_SERVER_CONFIGURATION     17
@@ -205,18 +205,6 @@ typedef struct {
     uint32_t    cl_amask; /* authmask corresponding to key type */
 } TLS_CERT_LOOKUP;
 
-typedef struct tls_state_t {
-    size_t      st_message_size;
-    int         st_message_type;
-} TLS_STATE;
-
-#define TLS1_2_RANDOM_BYTE_LEN      28
-
-typedef struct tls1_2_random_t {
-    uint32_t        rm_unixt_time;
-    uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
-} TLS1_2_RANDOM;
-
 /*
  * Structure containing table entry of values associated with the signature
  * algorithms (signature scheme) extension
@@ -241,9 +229,29 @@ typedef struct sigalg_lookup_t {
 } SIGALG_LOOKUP;
 
 
+typedef struct tls_state_t {
+    size_t                  st_message_size;
+    int                     st_message_type;
+    int                     st_cert_req;
+    uint8_t                 *st_ctype;
+    size_t                  st_ctype_len;
+    const SIGALG_LOOKUP     *st_peer_sigalg;
+    uint16_t                *st_peer_sigalgs;
+    uint16_t                *st_peer_cert_sigalgs;
+    size_t                  st_peer_sigalgslen;
+    size_t                  st_peer_cert_sigalgslen;
+    uint32_t                st_valid_flags[TLS_PKEY_NUM];
+} TLS_STATE;
+
+#define TLS1_2_RANDOM_BYTE_LEN      28
+
+typedef struct tls1_2_random_t {
+    uint32_t        rm_unixt_time;
+    uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
+} TLS1_2_RANDOM;
+
 typedef struct tls1_2_handshake_t {
     TLS1_2_RANDOM           hk_random;
-    const SIGALG_LOOKUP     *hk_peer_sigalg;
 } TLS1_2_HANDSHAKE;
 
 struct tls_session_t {
@@ -448,5 +456,7 @@ FC_EVP_PKEY *tls_generate_param_group(uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
 int tls_get_new_session(TLS *s, int session);
 int tls_cert_lookup_by_nid(int nid, size_t *pidx);
+int tls1_save_sigalgs(TLS *s, PACKET *pkt, int cert);
+int tls1_process_sigalgs(TLS *s);
 
 #endif

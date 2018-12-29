@@ -37,6 +37,8 @@ static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
                             PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_key_exchange(TLS *s, PACKET *pkt);
+static MSG_PROCESS_RETURN tls1_2_process_certificate_request(TLS *s,
+                            PACKET *pkt);
 
 static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
@@ -50,6 +52,10 @@ static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_KEY_EXCH,
         .pm_proc = tls1_2_process_key_exchange,
+    },
+    {
+        .pm_hand_state = TLS_ST_CR_CERT_REQ,
+        .pm_proc = tls1_2_process_certificate_request,
     },
 };
 
@@ -81,6 +87,20 @@ TLS_WRITE_STATEM tls12_client_write_statem_proc = {
     .ws_get_construct_message = fctls12_statem_get_client_construct_message,
 };
 
+static inline int
+cert_req_allowed(TLS *s)
+{
+    /* TLS does not like anon-DH with client cert */
+#if 0
+    if (s->s3->tmp.new_cipher->algorithm_auth & (TLS_aSRP | TLS_aPSK)) {
+        return 0;
+    }
+#endif
+
+    return 1;
+}
+
+
 static int
 fctls12_statem_client_read_transition(TLS *s, int mt)
 {
@@ -101,7 +121,7 @@ fctls12_statem_client_read_transition(TLS *s, int mt)
                 return 1;
             }
         case TLS_ST_CR_CERT:
-        /* Fall through */
+            /* Fall through */
 
         case TLS_ST_CR_CERT_STATUS:
             if (mt == TLS_MT_SERVER_KEY_EXCHANGE) {
@@ -109,7 +129,22 @@ fctls12_statem_client_read_transition(TLS *s, int mt)
                 return 1;
             }
             /* Fall through */
-    case TLS_ST_CR_KEY_EXCH:
+        case TLS_ST_CR_KEY_EXCH:
+            if (mt == TLS_MT_CERTIFICATE_REQUEST) {
+                if (cert_req_allowed(s)) {
+                    st->sm_hand_state = TLS_ST_CR_CERT_REQ;
+                    return 1;
+                }
+                break;
+            }
+            /* Fall through */
+
+        case TLS_ST_CR_CERT_REQ:
+            if (mt == TLS_MT_SERVER_DONE) {
+                st->sm_hand_state = TLS_ST_CR_SRVR_DONE;
+                return 1;
+            }
+
             break;
         default:
             break;
@@ -568,4 +603,66 @@ tls1_2_process_key_exchange(TLS *s, PACKET *pkt)
 err:
     return MSG_PROCESS_ERROR;
 }
+
+static MSG_PROCESS_RETURN
+tls1_2_process_certificate_request(TLS *s, PACKET *pkt)
+{
+    TLS_STATE   *st = NULL;
+    PACKET      ctypes = {};
+    PACKET      sigalgs = {};
+
+    st = &s->tls_state;
+    memset(&st->st_valid_flags[0], 0, sizeof(st->st_valid_flags));
+
+    /* get the certificate types */
+    if (!PACKET_get_length_prefixed_1(pkt, &ctypes)) {
+        FC_LOG("error\n");
+        return MSG_PROCESS_ERROR;
+    }
+
+    if (!PACKET_memdup(&ctypes, &st->st_ctype, &st->st_ctype_len)) {
+        FC_LOG("error\n");
+        return MSG_PROCESS_ERROR;
+    }
+
+    if (TLS_USE_SIGALGS(s)) {
+        if (!PACKET_get_length_prefixed_2(pkt, &sigalgs)) {
+            FC_LOG("error\n");
+            return MSG_PROCESS_ERROR;
+        }
+
+        /*
+         * Despite this being for certificates, preserve compatibility
+         * with pre-TLS 1.3 and use the regular sigalgs field.
+         */
+        if (!tls1_save_sigalgs(s, &sigalgs, 0)) {
+            FC_LOG("error\n");
+            return MSG_PROCESS_ERROR;
+        }
+        if (!tls1_process_sigalgs(s)) {
+            FC_LOG("error\n");
+            return MSG_PROCESS_ERROR;
+        }
+    }
+
+    /* get the CA RDNs */
+    if (!parse_ca_names(s, pkt)) {
+        /* SSLfatal() already called */
+        FC_LOG("error\n");
+        return MSG_PROCESS_ERROR;
+    }
+
+    if (PACKET_remaining(pkt) != 0) {
+        FC_LOG("error\n");
+        return MSG_PROCESS_ERROR;
+    }
+
+    /* we should setup a certificate to return.... */
+    st->st_cert_req = 1;
+    FC_LOG("NNNNNNNNNNNNNNNNNN\n");
+
+    return MSG_PROCESS_CONTINUE_PROCESSING;
+}
+
+
 

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "fc_log.h"
 
@@ -41,6 +42,23 @@ FC_CRYPTO_realloc(void *str, size_t num, const char *file, int line)
     }
 
     return ptr;
+}
+
+void *
+FC_CRYPTO_memdup(void *data, size_t num, const char *file, int line)
+{
+    void    *ptr = NULL;
+
+    if (data == NULL) {
+        return NULL;
+    }
+
+    ptr = FC_CRYPTO_malloc(num, file, line);
+    if (ptr == NULL) {
+        return NULL;
+    }
+
+    return memcpy(ptr, data, num);
 }
 
 void

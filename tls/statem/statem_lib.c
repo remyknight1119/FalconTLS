@@ -148,3 +148,8 @@ tls_get_message_body(TLS *s, size_t *len)
     return 1;
 }
 
+int
+parse_ca_names(TLS *s, PACKET *pkt)
+{
+    return 1;
+}

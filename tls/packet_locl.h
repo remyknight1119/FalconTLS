@@ -2,6 +2,7 @@
 #define __PACKET_LOCL_H__
 
 #include <falcontls/types.h>
+#include <falcontls/crypto.h>
 #include <internal/buffer.h>
 #include <fc_lib.h>
 
@@ -222,6 +223,30 @@ static inline int PACKET_as_length_prefixed_1(PACKET *pkt, PACKET *subpkt)
     return 1;
 }
 
+/*
+ * Reads a variable-length vector prefixed with a two-byte length, and stores
+ * the contents in |subpkt|. |pkt| can equal |subpkt|.
+ * Data is not copied: the |subpkt| packet will share its underlying buffer with
+ * the original |pkt|, so data wrapped by |pkt| must outlive the |subpkt|.
+ * Upon failure, the original |pkt| and |subpkt| are not modified.
+ */
+static inline int PACKET_get_length_prefixed_2(PACKET *pkt, PACKET *subpkt)
+{
+    const unsigned char     *data = NULL;
+    unsigned int            length = 0;
+    PACKET                  tmp = *pkt;
+
+    if (!PACKET_get_net_2(&tmp, &length) ||
+        !PACKET_get_bytes(&tmp, &data, (size_t)length)) {
+        return 0;
+    }
+
+    *pkt = tmp;
+    subpkt->pk_curr = data;
+    subpkt->pk_remaining = length;
+
+    return 1;
+}
 
 static inline int PACKET_as_length_prefixed_2(PACKET *pkt, PACKET *subpkt)
 {
@@ -241,6 +266,39 @@ static inline int PACKET_as_length_prefixed_2(PACKET *pkt, PACKET *subpkt)
 
     return 1;
 }
+
+/*
+ * Copy |pkt| bytes to a newly allocated buffer and store a pointer to the
+ * result in |*data|, and the length in |len|.
+ * If |*data| is not NULL, the old data is OPENSSL_free'd.
+ * If the packet is empty, or malloc fails, |*data| will be set to NULL.
+ * Returns 1 if the malloc succeeds and 0 otherwise.
+ * Does not forward PACKET position (because it is typically the last thing
+ * done with a given PACKET).
+ */
+static inline int PACKET_memdup(const PACKET *pkt, unsigned char **data,
+                                size_t *len)
+{
+    size_t      length = 0;
+
+    FALCONTLS_free(*data);
+    *data = NULL;
+    *len = 0;
+
+    length = PACKET_remaining(pkt);
+    if (length == 0) {
+        return 1;
+    }
+
+    *data = FALCONTLS_memdup((void *)pkt->pk_curr, length);
+    if (*data == NULL) {
+        return 0;
+    }
+
+    *len = length;
+    return 1;
+}
+
 
 static inline void PACKET_null_init(PACKET *pkt)
 {

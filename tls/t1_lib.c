@@ -360,8 +360,103 @@ tls12_check_peer_sigalg(TLS *s, uint16_t sig, FC_EVP_PKEY *pkey)
         }
     }
 
-    s->tls_handshake.tls1_2.hk_peer_sigalg = lu;
+    s->tls_state.st_peer_sigalg = lu;
     FC_LOG("next\n");
     return 1;
 }
+
+int
+tls1_save_u16(PACKET *pkt, uint16_t **pdest, size_t *pdestlen)
+{
+    uint16_t        *buf = NULL;
+    unsigned int    stmp = 0;
+    size_t          size = 0;
+    size_t          i = 0;
+
+    size = PACKET_remaining(pkt);
+
+    /* Invalid data length */
+    if (size == 0 || (size & 1) != 0) {
+        return 0;
+    }
+
+    size >>= 1;
+
+    if ((buf = FALCONTLS_malloc(size * sizeof(*buf))) == NULL)  {
+        return 0;
+    }
+
+    for (i = 0; i < size && PACKET_get_net_2(pkt, &stmp); i++) {
+        buf[i] = stmp;
+    }
+
+    if (i != size) {
+        FALCONTLS_free(buf);
+        return 0;
+    }
+
+    FALCONTLS_free(*pdest);
+    *pdest = buf;
+    *pdestlen = size;
+
+    return 1;
+}
+
+int
+tls1_save_sigalgs(TLS *s, PACKET *pkt, int cert)
+{
+    TLS_STATE   *st = NULL;
+
+    /* Extension ignored for inappropriate versions */
+    if (!TLS_USE_SIGALGS(s)) {
+        return 1;
+    }
+#if 0 
+    /* Should never happen */
+    if (s->tls_cert == NULL) {
+        return 0;
+    }
+#endif
+
+    st = &s->tls_state;
+    if (cert) {
+        return tls1_save_u16(pkt, &st->st_peer_cert_sigalgs,
+                             &st->st_peer_cert_sigalgslen);
+    }
+
+    return tls1_save_u16(pkt, &st->st_peer_sigalgs,
+            &st->st_peer_sigalgslen);
+}
+
+/* Set preferred digest for each key type */
+
+int
+tls1_process_sigalgs(TLS *s)
+{
+#if 0
+    size_t i;
+    uint32_t *pvalid = s->s3->tmp.valid_flags;
+    CERT *c = s->cert;
+
+    if (!tls1_set_shared_sigalgs(s))
+        return 0;
+
+    for (i = 0; i < SSL_PKEY_NUM; i++)
+        pvalid[i] = 0;
+
+    for (i = 0; i < c->shared_sigalgslen; i++) {
+        const SIGALG_LOOKUP *sigptr = c->shared_sigalgs[i];
+        int idx = sigptr->sig_idx;
+
+        /* Ignore PKCS1 based sig algs in TLSv1.3 */
+        if (SSL_IS_TLS13(s) && sigptr->sig == EVP_PKEY_RSA)
+            continue;
+        /* If not disabled indicate we can explicitly sign */
+        if (pvalid[idx] == 0 && !ssl_cert_is_disabled(idx))
+            pvalid[idx] = CERT_PKEY_EXPLICIT_SIGN | CERT_PKEY_SIGN;
+    }
+#endif
+    return 1;
+}
+
 
