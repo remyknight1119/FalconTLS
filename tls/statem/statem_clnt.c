@@ -12,7 +12,8 @@
 static int fctls12_statem_client_read_transition(TLS *s, int mt);
 static MSG_PROCESS_RETURN fctls12_statem_client_process_message(TLS *s,
                             PACKET *pkt);
-static WORK_STATE fctls12_statem_client_post_process_message(TLS *s);
+static WORK_STATE fctls12_statem_client_post_process_message(TLS *s,
+                            WORK_STATE wst);
 
 TLS_READ_STATEM tls12_client_read_statem_proc = {
     .rs_transition = fctls12_statem_client_read_transition,
@@ -39,6 +40,7 @@ static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
 static MSG_PROCESS_RETURN tls1_2_process_key_exchange(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_certificate_request(TLS *s,
                             PACKET *pkt);
+static MSG_PROCESS_RETURN tls1_2_process_server_done(TLS *s, PACKET *pkt);
 
 static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
@@ -56,6 +58,10 @@ static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_CERT_REQ,
         .pm_proc = tls1_2_process_certificate_request,
+    },
+    {
+        .pm_hand_state = TLS_ST_CR_SRVR_DONE,
+        .pm_proc = tls1_2_process_server_done,
     },
 };
 
@@ -167,10 +173,23 @@ fctls12_statem_client_process_message(TLS *s, PACKET *pkt)
     return proc(s, pkt);
 }
 
-static WORK_STATE
-fctls12_statem_client_post_process_message(TLS *s)
+WORK_STATE
+tls_prepare_client_certificate(TLS *s, WORK_STATE wst)
 {
     return WORK_FINISHED_CONTINUE;
+}
+
+static WORK_STATE
+fctls12_statem_client_post_process_message(TLS *s, WORK_STATE wst)
+{
+    TLS_STATEM  *st = &s->tls_statem;
+
+    switch (st->sm_hand_state) {
+        case TLS_ST_CR_CERT_REQ:
+            return tls_prepare_client_certificate(s, wst);
+        default:
+            return WORK_ERROR;
+    }
 }
 
 static WRITE_TRAN
@@ -659,10 +678,30 @@ tls1_2_process_certificate_request(TLS *s, PACKET *pkt)
 
     /* we should setup a certificate to return.... */
     st->st_cert_req = 1;
-    FC_LOG("NNNNNNNNNNNNNNNNNN\n");
 
+    FC_LOG("OUT!\n");
     return MSG_PROCESS_CONTINUE_PROCESSING;
 }
 
+int
+tls_process_initial_server_flight(TLS *s)
+{
+    return 1;
+}
+
+static MSG_PROCESS_RETURN
+tls1_2_process_server_done(TLS *s, PACKET *pkt)
+{
+    if (PACKET_remaining(pkt) > 0) {
+        return MSG_PROCESS_ERROR;
+    }
+
+    if (!tls_process_initial_server_flight(s)) {
+        return MSG_PROCESS_ERROR;
+    }
+
+    FC_LOG("Server Done\n");
+    return MSG_PROCESS_FINISHED_READING;
+}
 
 

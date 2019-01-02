@@ -151,5 +151,24 @@ tls_get_message_body(TLS *s, size_t *len)
 int
 parse_ca_names(TLS *s, PACKET *pkt)
 {
+    //const unsigned char     *namestart = NULL;
+    const unsigned char     *namebytes = NULL;
+    unsigned int            name_len = 0;
+    PACKET                  cadns = {};
+
+    if (!PACKET_get_length_prefixed_2(pkt, &cadns)) {
+        goto err;
+    }
+
+    while (PACKET_remaining(&cadns)) {
+        if (!PACKET_get_net_2(&cadns, &name_len) ||
+            !PACKET_get_bytes(&cadns, &namebytes, name_len)) {
+            goto err;
+        }
+    }
+
     return 1;
+err:
+    return 0;
 }
+

@@ -105,13 +105,25 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
             }
             break;
         case READ_STATE_POST_PROCESS:
+            st->sm_read_state_work = read->rs_post_process_message(s,
+                    st->sm_read_state_work);
+            switch (st->sm_read_state_work) {
+                case WORK_ERROR:
+                    break;
+                case WORK_MORE_A:
+                case WORK_MORE_B:
+                    return SUB_STATE_ERROR;
+                case WORK_FINISHED_CONTINUE:
+                    st->sm_read_state = READ_STATE_HEADER;
+                    break;
+                case WORK_FINISHED_STOP:
+                    return SUB_STATE_FINISHED;
+            }
             break;
         default:
-            break;
+            return SUB_STATE_ERROR;
         }
     }
- 
-    return SUB_STATE_ERROR;
 }
 
 static SUB_STATE_RETURN

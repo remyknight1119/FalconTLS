@@ -7,7 +7,8 @@
 static int fctls12_statem_server_read_transition(TLS *s, int mt);
 static MSG_PROCESS_RETURN fctls12_statem_server_process_message(TLS *s,
                             PACKET *pkt);
-static WORK_STATE fctls12_statem_server_post_process_message(TLS *s);
+static WORK_STATE fctls12_statem_server_post_process_message(TLS *s,
+                            WORK_STATE wst);
 
 TLS_READ_STATEM tls12_server_read_statem_proc = {
     .rs_transition = fctls12_statem_server_read_transition,
@@ -42,7 +43,7 @@ fctls12_statem_server_process_message(TLS *s, PACKET *pkt)
 }
 
 static WORK_STATE
-fctls12_statem_server_post_process_message(TLS *s)
+fctls12_statem_server_post_process_message(TLS *s, WORK_STATE wst)
 {
     return WORK_FINISHED_CONTINUE;
 }

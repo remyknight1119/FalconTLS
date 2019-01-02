@@ -154,7 +154,7 @@ typedef struct tls_statem_t {
 typedef struct tls_read_statem_t {
     int                 (*rs_transition)(TLS *s, int mt);
     MSG_PROCESS_RETURN  (*rs_process_message)(TLS *s, PACKET *pkt);
-    WORK_STATE          (*rs_post_process_message)(TLS *s);
+    WORK_STATE          (*rs_post_process_message)(TLS *s, WORK_STATE wst);
 } TLS_READ_STATEM;
 
 typedef struct tls_write_statem_t {
