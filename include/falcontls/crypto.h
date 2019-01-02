@@ -9,6 +9,14 @@
 #define FC_CRYPTO_add(a,b,c)       ((*(a))+=(b))
 #define FC_PEM_DATA_LEN             80
 
+typedef struct FC_DECODE_CTX {
+    int         num;
+    int         length;
+    uint8_t     data[FC_PEM_DATA_LEN];
+    int         line_num;
+    int         expect_nl;
+} FC_DECODE_CTX;
+
 extern int FALCONTLS_init_crypto(void);
 extern void *FC_CRYPTO_malloc(size_t num, const char *file, int line);
 extern void *FC_CRYPTO_calloc(size_t num, const char *file, int line);

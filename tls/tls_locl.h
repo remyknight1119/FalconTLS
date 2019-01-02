@@ -229,6 +229,13 @@ typedef struct sigalg_lookup_t {
 } SIGALG_LOOKUP;
 
 
+#define TLS1_2_RANDOM_BYTE_LEN      28
+
+typedef struct tls1_2_random_t {
+    uint32_t        rm_unixt_time;
+    uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
+} TLS1_2_RANDOM;
+
 typedef struct tls_state_t {
     size_t                  st_message_size;
     int                     st_message_type;
@@ -241,18 +248,13 @@ typedef struct tls_state_t {
     size_t                  st_peer_sigalgslen;
     size_t                  st_peer_cert_sigalgslen;
     uint32_t                st_valid_flags[TLS_PKEY_NUM];
+    union                   {
+        struct {
+            TLS1_2_RANDOM   client_random;
+            TLS1_2_RANDOM   server_random;
+        } st_tls1_2;
+    };
 } TLS_STATE;
-
-#define TLS1_2_RANDOM_BYTE_LEN      28
-
-typedef struct tls1_2_random_t {
-    uint32_t        rm_unixt_time;
-    uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
-} TLS1_2_RANDOM;
-
-typedef struct tls1_2_handshake_t {
-    TLS1_2_RANDOM           hk_random;
-} TLS1_2_HANDSHAKE;
 
 struct tls_session_t {
     FC_X509     *se_peer;
@@ -261,6 +263,17 @@ struct tls_session_t {
         uint8_t     *ecpointformats; /* peer's list */
     } se_ext;
 };
+
+typedef struct tls_cert_pkey_t {
+    FC_X509                 *cp_x509;
+    FC_EVP_PKEY             *cp_privatekey;
+    FC_STACK_OF(FC_X509)    *cp_chain;
+} CERT_PKEY;
+
+typedef struct tls_cert_t {
+    CERT_PKEY           *ct_key;
+    CERT_PKEY           ct_pkeys[FC_EVP_PKEY_NUM];
+} CERT;
 
 struct tls_t {
     TLS_STATEM                  tls_statem;
@@ -273,6 +286,7 @@ struct tls_t {
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list;
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list_by_id;
     const TLS_CIPHER            *tls_cipher;
+    CERT                        *tls_cert;
     int                         (*tls_handshake_func)(TLS *);
     uint16_t                    tls_version;
     int                         tls_fd;
@@ -285,9 +299,6 @@ struct tls_t {
     FC_EVP_PKEY                 *tls_peer_key;
     TLS_SESSION                 *tls_session;
     uint32_t                    tls_max_send_fragment;
-    union {
-        TLS1_2_HANDSHAKE        tls1_2;
-    } tls_handshake;
     struct {
         size_t                  ecpointformats_len;
         unsigned char           *ecpointformats;
@@ -342,17 +353,6 @@ typedef struct tls_group_info_t {
 #define EXPLICIT_PRIME_CURVE_TYPE   1
 #define EXPLICIT_CHAR2_CURVE_TYPE   2
 #define NAMED_CURVE_TYPE            3
-
-typedef struct tls_cert_pkey_t {
-    FC_X509                 *cp_x509;
-    //FC_EVP_PKEY             *cp_privatekey;
-    FC_STACK_OF(FC_X509)    *cp_chain;
-} CERT_PKEY;
-
-typedef struct tls_cert_t {
-    CERT_PKEY           *ct_key;
-    CERT_PKEY           ct_pkeys[FC_EVP_PKEY_NUM];
-} CERT;
 
 struct tls_ctx_t {
     const TLS_METHOD            *sc_method;

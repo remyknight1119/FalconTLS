@@ -22,12 +22,18 @@ TLS_READ_STATEM tls12_client_read_statem_proc = {
 };
 
 static int tls1_2_construct_client_hello(TLS *s, WPACKET *pkt);
+static int tls1_2_construct_client_certificate(TLS *s, WPACKET *pkt);
 
 static TLS_CONSTRUCT_MESSAGE tls12_client_construct_message[] = {
     {
         .cm_hand_state = TLS_ST_CW_CLNT_HELLO,
         .cm_message_type = TLS_MT_CLIENT_HELLO,
         .cm_construct = tls1_2_construct_client_hello,
+    },
+    {
+        .cm_hand_state = TLS_ST_CW_CERT,
+        .cm_message_type = TLS_MT_CERTIFICATE,
+        .cm_construct = tls1_2_construct_client_certificate,
     },
 };
 
@@ -196,13 +202,19 @@ static WRITE_TRAN
 fctls12_statem_client_write_transition(TLS *s)
 {
     TLS_STATEM  *st = &s->tls_statem;
+    TLS_STATE   *t = NULL;
 
+    t = &s->tls_state;
     switch (st->sm_hand_state) {
         case TLS_ST_BEFORE:
             st->sm_hand_state = TLS_ST_CW_CLNT_HELLO;
             return WRITE_TRAN_CONTINUE;
         case TLS_ST_CW_CLNT_HELLO:
             return WRITE_TRAN_FINISHED;
+        case TLS_ST_CR_SRVR_DONE:
+            st->sm_hand_state = 
+                (t->st_cert_req == 1) ? TLS_ST_CW_CERT:TLS_ST_CW_CHANGE;
+            return WRITE_TRAN_CONTINUE;
         default:
             return WRITE_TRAN_ERROR;
     }
@@ -359,6 +371,13 @@ err:
 }
 
 static int
+tls1_2_construct_client_certificate(TLS *s, WPACKET *pkt)
+{
+    FC_LOG("IIIIIIIIIIIIIn\n");
+    return 1;
+}
+
+static int
 set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
 {
     FC_STACK_OF(TLS_CIPHER) *sk = NULL;
@@ -386,7 +405,7 @@ set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
 static MSG_PROCESS_RETURN
 tls1_2_process_server_hello(TLS *s, PACKET *pkt)
 {
-    TLS1_2_HANDSHAKE    *h = NULL;
+    TLS1_2_RANDOM       *server_random = NULL;
     const unsigned char *cipherchars = NULL;
     unsigned int        sversion = 0;
     unsigned int        compression = 0;
@@ -398,9 +417,9 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
         goto err;
     }
 
-    h = &s->tls_handshake.tls1_2;
+    server_random = &s->tls_state.st_tls1_2.server_random;
     /* load the server random */
-    if (!PACKET_copy_bytes(pkt, &h->hk_random, sizeof(h->hk_random))) {
+    if (!PACKET_copy_bytes(pkt, server_random, sizeof(*server_random))) {
         goto err;
     }
 

@@ -3,9 +3,10 @@
 #include <falcontls/tls.h>
 #include <falcontls/crypto.h>
 #include <falcontls/bio.h>
-//#include <falcontls/pem.h>
+#include <falcontls/pem.h>
 #include <falcontls/types.h>
 #include <falcontls/evp.h>
+#include <falcontls/x509.h>
 #include <fc_log.h>
 
 #include "tls_locl.h"
@@ -47,6 +48,42 @@ static const TLS_CERT_LOOKUP tls_cert_info [] = {
 };
 
 int
+tls_cert_lookup_by_nid(int nid, size_t *pidx)
+{
+    size_t  i = 0;
+
+    for (i = 0; i < FC_ARRAY_SIZE(tls_cert_info); i++) {
+        if (tls_cert_info[i].cl_nid == nid) {
+            *pidx = i;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+const TLS_CERT_LOOKUP *
+tls_cert_lookup_by_pkey(const FC_EVP_PKEY *pk, size_t *pidx)
+{
+    size_t  tmpidx = 0;
+    int     nid = FC_EVP_PKEY_id(pk);
+
+    if (nid == NID_undef) {
+        return NULL;
+    }
+
+    if (!tls_cert_lookup_by_nid(nid, &tmpidx)) {
+        return NULL;
+    }
+
+    if (pidx != NULL) {
+        *pidx = tmpidx;
+    }
+
+    return &tls_cert_info[tmpidx];
+}
+
+int
 tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk)
 {
     return 1;
@@ -64,33 +101,60 @@ FCTLS_use_certificate(TLS *s, FC_X509 *x)
     return 1;
 }
 
+static int
+tls_set_cert(CERT *c, FC_X509 *x)
+{
+    FC_EVP_PKEY     *pkey = NULL;
+    size_t          i = 0;
+
+    pkey = FC_X509_get0_pubkey(x);
+    if (pkey == NULL) {
+        return 0;
+    }
+
+    if (tls_cert_lookup_by_pkey(pkey, &i) == NULL) {
+        return 0;
+    }
+
+#if 0
+    if (i == T:S_PKEY_ECC && !EC_KEY_can_sign(FC_EVP_PKEY_get0_EC_KEY(pkey))) {
+        return 0;
+    }
+#endif
+
+    if (c->ct_pkeys[i].cp_privatekey != NULL) {
+    }
+
+    FC_X509_free(c->ct_pkeys[i].cp_x509);
+    FC_X509_up_ref(x);
+    c->ct_pkeys[i].cp_x509 = x;
+    c->ct_key = &(c->ct_pkeys[i]);
+
+    return 1;
+}
+
 int
 FCTLS_CTX_use_certificate(TLS_CTX *ctx, FC_X509 *x)
 {
-    //int rv = 0;
-
-    if (x == NULL) {
-        return (0);
-    }
-
-    return 1;
+    return tls_set_cert(ctx->sc_cert, x);
 }
 
 int
 FCTLS_CTX_use_certificate_file(TLS_CTX *ctx, const char *file, 
         uint32_t type)
 {
-#if 0
     FC_BIO      *in = NULL;
     FC_X509     *x = NULL;
     int         ret = 0;
     
     in = FC_BIO_new(FC_BIO_s_file());
     if (in == NULL) {
+        FC_LOG("Open %s failed\n", file);
         goto end;
     }
 
     if (FC_BIO_read_filename(in, file) <= 0) {
+        FC_LOG("Read %s failed\n", file);
         goto end;
     }
 
@@ -102,15 +166,33 @@ FCTLS_CTX_use_certificate_file(TLS_CTX *ctx, const char *file,
     }
 
     ret = FCTLS_CTX_use_certificate(ctx, x);
+    FC_LOG("ret = %d, x= %p\n", ret, x);
     FC_X509_free(x);
 end:
     FC_BIO_free(in);
     return ret;
-#endif
+}
+
+static int
+tls_set_pkey(CERT *c, FC_EVP_PKEY *pkey)
+{
+    size_t          i = 0;
+
+    if (tls_cert_lookup_by_pkey(pkey, &i) == NULL) {
+        return 0;
+    }
+
+    if (c->ct_pkeys[i].cp_privatekey != NULL) {
+    }
+
+
+    FC_EVP_PKEY_free(c->ct_pkeys[i].cp_privatekey);
+    FC_EVP_PKEY_up_ref(pkey);
+    c->ct_pkeys[i].cp_privatekey = pkey;
+    c->ct_key = &c->ct_pkeys[i];
     return 1;
 }
 
-#if 0
 int
 FCTLS_CTX_use_PrivateKey(TLS_CTX *ctx, FC_EVP_PKEY *pkey)
 {
@@ -118,22 +200,17 @@ FCTLS_CTX_use_PrivateKey(TLS_CTX *ctx, FC_EVP_PKEY *pkey)
         return (0);
     }
 
-    //return (tls_set_pkey(ctx->sc_cert, pkey));
-    return 1;
+    return (tls_set_pkey(ctx->sc_cert, pkey));
 }
-#endif
 
 int
 FCTLS_CTX_use_PrivateKey_file(TLS_CTX *ctx, const char *file, 
         uint32_t type)
 {
-#if 0
     FC_BIO      *in = NULL;
     FC_EVP_PKEY *pkey = NULL;
-#endif
     int         ret = 1;
     
-#if 0
     in = FC_BIO_new(FC_BIO_s_file());
     if (in == NULL) {
         goto end;
@@ -154,28 +231,12 @@ FCTLS_CTX_use_PrivateKey_file(TLS_CTX *ctx, const char *file,
     FC_EVP_PKEY_free(pkey);
 end:
     FC_BIO_free(in);
-#endif
     return ret;
 }
 
 int
 tls_security(const TLS *s, int op, int bits, int nid, void *other)
 {
-    return 0;
-}
-
-int
-tls_cert_lookup_by_nid(int nid, size_t *pidx)
-{
-    size_t  i = 0;
-
-    for (i = 0; i < FC_ARRAY_SIZE(tls_cert_info); i++) {
-        if (tls_cert_info[i].cl_nid == nid) {
-            *pidx = i;
-            return 1;
-        }
-    }
-
     return 0;
 }
 

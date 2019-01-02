@@ -1,6 +1,7 @@
 #ifndef __FC_BIO_H__
 #define __FC_BIO_H__
 
+#define FC_OPENSSL 1
 
 extern FC_BIO *FC_BIO_new(const FC_BIO_METHOD *method);
 extern int FC_BIO_free(FC_BIO *a);

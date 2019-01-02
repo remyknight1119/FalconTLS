@@ -1,0 +1,5 @@
+1. client--->server
+2. encrypt/decrypt
+3. server--->client
+4. cert chain && verify
+5. multi cert

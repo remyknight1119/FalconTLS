@@ -141,10 +141,14 @@ fc_openssl_add_all_algorighms(void)
 static void *
 fc_openssl_ctx_client_new(void)
 {
+    void    *ctx = NULL;
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     return SSL_CTX_new(TLSv1_2_client_method());
 #else
-    return SSL_CTX_new(TLS_client_method());
+    ctx = SSL_CTX_new(TLS_client_method());
+    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+    return ctx;
 #endif
 }
 

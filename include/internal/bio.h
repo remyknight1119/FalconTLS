@@ -6,9 +6,7 @@
 #include <openssl/bio.h>
 
 struct fc_bio_method_t {
-#ifdef FC_OPENSSL
-    BIO_METHOD  *m;
-#endif
+    const BIO_METHOD  *m;
     int         bm_type;
     const char  *bm_name;
     int         (*bm_write)(FC_BIO *, const char *, int);
@@ -21,9 +19,7 @@ struct fc_bio_method_t {
 };
 
 struct fc_bio_t {
-#ifdef FC_OPENSSL
     BIO                     *b;
-#endif
     const FC_BIO_METHOD     *b_method;
     long                    (*b_callback) (struct fc_bio_t *, int,
                                 const char *, int, long, long);
