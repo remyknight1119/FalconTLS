@@ -28,3 +28,9 @@ FC_EVP_PKEY_get0_EC_KEY(FC_EVP_PKEY *pkey)
 {
     return (FC_EC_KEY *)EVP_PKEY_get0_EC_KEY((EVP_PKEY *)pkey);
 }
+
+int
+FC_EVP_PKEY_up_ref(FC_EVP_PKEY *pkey)
+{
+    return EVP_PKEY_up_ref((EVP_PKEY *)pkey);
+}

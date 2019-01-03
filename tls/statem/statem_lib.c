@@ -172,3 +172,8 @@ err:
     return 0;
 }
 
+int
+tls_output_cert_chain(TLS *s, WPACKET *pkt, CERT_PKEY *cpk)
+{
+}
+

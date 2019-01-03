@@ -47,6 +47,65 @@ static const TLS_CERT_LOOKUP tls_cert_info [] = {
     }, /* TLS_PKEY_ED448 */
 };
 
+CERT *
+tls_cert_new(void)
+{
+    CERT    *ret = NULL;
+    
+    ret = FALCONTLS_calloc(sizeof(*ret));
+    if (ret == NULL) {
+        return NULL;
+    }
+
+    ret->ct_key = &(ret->ct_pkeys[TLS_PKEY_RSA]);
+#if 0
+    ret->ct_references = 1;
+    ret->sec_cb = ssl_security_default_callback;
+    ret->sec_level = OPENSSL_TLS_SECURITY_LEVEL;
+    ret->sec_ex = NULL;
+    ret->lock = CRYPTO_THREAD_lock_new();
+    if (ret->lock == NULL) {
+        SSLerr(SSL_F_SSL_CERT_NEW, ERR_R_MALLOC_FAILURE);
+        OPENSSL_free(ret);
+        return NULL;
+    }
+#endif
+
+    return ret;
+}
+
+void
+tls_cert_free(CERT *c)
+{
+    //int i;
+
+    if (c == NULL) {
+        return;
+    }
+#if 0
+    CRYPTO_DOWN_REF(&c->references, &i, c->lock);
+    REF_PRINT_COUNT("CERT", c);
+    if (i > 0)
+        return;
+    REF_ASSERT_ISNT(i < 0);
+
+    EVP_PKEY_free(c->dh_tmp);
+
+    ssl_cert_clear_certs(c);
+    OPENSSL_free(c->conf_sigalgs);
+    OPENSSL_free(c->client_sigalgs);
+    OPENSSL_free(c->shared_sigalgs);
+    OPENSSL_free(c->ctype);
+    X509_STORE_free(c->verify_store);
+    X509_STORE_free(c->chain_store);
+    custom_exts_free(&c->custext);
+    OPENSSL_free(c->psk_identity_hint);
+    CRYPTO_THREAD_lock_free(c->lock);
+#endif
+    FALCONTLS_free(c);
+}
+
+
 int
 tls_cert_lookup_by_nid(int nid, size_t *pidx)
 {

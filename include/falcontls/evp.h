@@ -97,5 +97,6 @@ extern int FC_EVP_PKEY_set1_tls_encodedpoint(FC_EVP_PKEY *pkey,
             const unsigned char *pt, size_t ptlen);
 extern int FC_EVP_PKEY_id(const FC_EVP_PKEY *pkey);
 extern FC_EC_KEY *FC_EVP_PKEY_get0_EC_KEY(FC_EVP_PKEY *pkey);
+extern int FC_EVP_PKEY_up_ref(FC_EVP_PKEY *pkey);
 
 #endif

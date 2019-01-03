@@ -50,6 +50,7 @@ EXT_RETURN tls_construct_stoc_supported_groups(TLS *s, WPACKET *pkt,
 int tls_parse_all_extensions(TLS *s, PACKET *pkt);
 
 int parse_ca_names(TLS *s, PACKET *pkt);
+int tls_output_cert_chain(TLS *s, WPACKET *pkt, CERT_PKEY *cpk);
 
 
 #endif

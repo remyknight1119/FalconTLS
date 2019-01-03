@@ -374,7 +374,8 @@ static int
 tls1_2_construct_client_certificate(TLS *s, WPACKET *pkt)
 {
     FC_LOG("IIIIIIIIIIIIIn\n");
-    return 1;
+
+    return tls_output_cert_chain(s, pkt, s->tls_cert->ct_key);
 }
 
 static int

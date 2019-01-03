@@ -28,6 +28,11 @@ FCTLS_CTX_new(const TLS_METHOD *meth)
         goto err;
     }
 
+    ctx->sc_cert = tls_cert_new();
+    if (ctx->sc_cert == NULL) {
+        goto err;
+    }
+
     return ctx;
 err:
     FCTLS_CTX_free(ctx);
@@ -41,6 +46,7 @@ FCTLS_CTX_free(TLS_CTX *ctx)
         return;
     }
 
+    tls_cert_free(ctx->sc_cert);
     FALCONTLS_free(ctx);
 }
 
@@ -79,6 +85,7 @@ FCTLS_new(TLS_CTX *ctx)
 
     s->tls_ctx = ctx;
     s->tls_method = ctx->sc_method;
+    s->tls_cert = ctx->sc_cert;
 
     if (!s->tls_method->md_tls_new(s)) {
         FC_LOG("TLS new failed\n");
