@@ -203,18 +203,16 @@ tls1_2_handshake_write(TLS *s)
 }
 
 int
-tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int mt)
+tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int htype)
 {
-    handshake_t     *h = NULL;
-    uint8_t         *len = NULL;
+    if (htype == TLS_MT_CHANGE_CIPHER_SPEC) {
+        return 1;
+    }
 
-    h = (void *)WPKT_GETBUF(pkt);
-    h->hk_type  = mt;
-    len = &h->hk_len[0];
-    l2n3(pkt->wk_written, len);
-
-    s->tls_init_num = (int)pkt->wk_written + TLS_HM_HEADER_LENGTH;
-    s->tls_init_off = 0;
+    if (WPACKET_put_bytes_u8(pkt, htype)  == 0||
+            !WPACKET_start_sub_packet_u24(pkt) == 0) {
+        return 0;
+    }
 
     return 1;
 }
@@ -262,19 +260,14 @@ tls1_2_get_cipher_by_char(const uint8_t *p)
 }
 
 int 
-tls1_2_put_cipher_by_char(const TLS_CIPHER *c, uint8_t *p)
+tls1_2_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len)
 {
-    uint32_t    l = 0;
-
-    if (p != NULL) {
-        l = c->cp_id;
-        if ((l & 0xFF000000) != 0x03000000) {
-            return (0);
-        }
-        *((uint16_t *)p) = FC_HTONS(l & 0xFFFF);
+    if (!WPACKET_put_bytes_u16(pkt, c->cp_id & 0xffff)) {
+        return 0;
     }
 
-    return (sizeof(uint16_t));
+    *len = sizeof(uint16_t);
+    return 1;
 }
 
 

@@ -3,6 +3,7 @@
 #include <fc_log.h>
 
 #include "statem.h"
+#include "statem_locl.h"
 #include "tls_locl.h"
 #include "handshake.h"
 
@@ -173,8 +174,9 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                     return SUB_STATE_ERROR;
                 }
 
-                if (WPACKET_init(&pkt, s->tls_init_buf,
-                            tls_hm_header_len(s)) == 0) {
+                if (WPACKET_init(&pkt, s->tls_init_buf) == 0 ||
+                        tls_set_handshake_header(s, &pkt, mt) == 0) {
+                    WPACKET_cleanup(&pkt);
                     return SUB_STATE_ERROR;
                 }
 
@@ -182,7 +184,11 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                     return SUB_STATE_ERROR;
                 }
 
-                tls_set_handshake_header(s, &pkt, mt);
+                if (tls_close_construct_packet(s, &pkt, mt) == 0 ||
+                        WPACKET_finish(&pkt) == 0) {
+                    WPACKET_cleanup(&pkt);
+                    return SUB_STATE_ERROR;
+                }
 
             case WRITE_STATE_SEND:
                 ret = statem_do_write(s);

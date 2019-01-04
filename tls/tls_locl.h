@@ -42,6 +42,8 @@
 #define TLS_MT_FINISHED                 20
 #define TLS_MT_KEY_UPDATE               24
 
+#define TLS_MT_CHANGE_CIPHER_SPEC       0x0101
+
 /* ExtensionType values from RFC3546 / RFC4366 / RFC6066 */
 #define TLSEXT_TYPE_server_name                 0
 #define TLSEXT_TYPE_max_fragment_length         1
@@ -388,7 +390,7 @@ struct tls_method_t {
                                 long larg, void *parg);
     const TLS_CIPHER        *(*md_get_cipher_by_char)(const uint8_t *ptr);
     int                     (*md_put_cipher_by_char)(const TLS_CIPHER *cipher,
-                                uint8_t *ptr);
+                                WPACKET *pkt, size_t *len);
     int                     (*md_tls_pending) (const TLS *s); 
     int                     (*md_num_ciphers) (void);
     const TLS_CIPHER        *(*md_get_cipher) (unsigned ncipher);

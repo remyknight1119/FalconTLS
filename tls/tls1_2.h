@@ -11,7 +11,7 @@ int tls1_2_peek(TLS *s, void *buf, int len);
 int tls1_2_num_ciphers(void);
 const TLS_CIPHER *tls1_2_get_cipher(uint32_t u);
 const TLS_CIPHER *tls1_2_get_cipher_by_char(const uint8_t *p);
-int tls1_2_put_cipher_by_char(const TLS_CIPHER *c, uint8_t *p);
+int tls1_2_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len);
 
 
 #endif

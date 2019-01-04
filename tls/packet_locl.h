@@ -306,6 +306,27 @@ static inline void PACKET_null_init(PACKET *pkt)
     pkt->pk_remaining = 0;
 }
 
+typedef struct wpacket_sub_t WPACKET_SUB;
+
+struct wpacket_sub_t {
+    /* The parent WPACKET_SUB if we have one or NULL otherwise */
+    WPACKET_SUB     *ws_parent;
+
+    /*
+     * Offset into the buffer where the length of this WPACKET goes. We use an
+     * offset in case the buffer grows and gets reallocated.
+     */
+    size_t          ws_packet_len;
+
+    /* Number of bytes in the packet_len or 0 if we don't write the length */
+    size_t          ws_lenbytes;
+
+    /* Number of bytes written to the buf prior to this packet starting */
+    size_t          ws_pwritten;
+
+    /* Flags for this sub-packet */
+    unsigned int    ws_flags;
+};
 
 typedef struct wpacket_t {
     /* The buffer where we store the output data */
@@ -322,6 +343,8 @@ typedef struct wpacket_t {
 
     /* Maximum number of bytes we will allow to be written to this WPACKET */
     size_t          wk_maxsize;
+
+    WPACKET_SUB     *wk_subs;
 } WPACKET;
 
 #define WPKT_GETBUF(p)      (unsigned char *)GET_BUF_DATA((p)->wk_buf)
@@ -341,8 +364,23 @@ int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t bytes);
 #define WPACKET_put_bytes_u32(pkt, val) \
     WPACKET_put_bytes((pkt), (val), 4)
 
+int WPACKET_start_sub_packet_len(WPACKET *pkt, size_t lenbytes);
+/*
+ * Convenience macros for calling WPACKET_start_sub_packet_len with different
+ * lengths
+ */
+#define WPACKET_start_sub_packet_u8(pkt) \
+    WPACKET_start_sub_packet_len((pkt), 1)
+#define WPACKET_start_sub_packet_u16(pkt) \
+    WPACKET_start_sub_packet_len((pkt), 2)
+#define WPACKET_start_sub_packet_u24(pkt) \
+    WPACKET_start_sub_packet_len((pkt), 3)
+#define WPACKET_start_sub_packet_u32(pkt) \
+    WPACKET_start_sub_packet_len((pkt), 4)
 
-int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf, size_t hlen);
+
+int WPACKET_init(WPACKET *pkt, FC_BUF_MEM *buf);
+void WPACKET_cleanup(WPACKET *pkt);
 
 /*
  * Write the value stored in |val| into the WPACKET. The value will consume
@@ -355,5 +393,9 @@ int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size);
 int WPACKET_memset(WPACKET *pkt, int ch, size_t len);
 int WPACKET_memcpy(WPACKET *pkt, const void *src, size_t len);
 int WPACKET_allocate_bytes(WPACKET *pkt, size_t len, unsigned char **allocbytes);
+int WPACKET_finish(WPACKET *pkt);
+int WPACKET_get_length(WPACKET *pkt, size_t *len);
+int WPACKET_set_max_size(WPACKET *pkt, size_t maxsize);
+int WPACKET_close(WPACKET *pkt);
 
 #endif

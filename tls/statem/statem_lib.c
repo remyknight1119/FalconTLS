@@ -149,6 +149,22 @@ tls_get_message_body(TLS *s, size_t *len)
 }
 
 int
+tls_close_construct_packet(TLS *s, WPACKET *pkt, int htype)
+{
+    size_t      msglen = 0;
+
+    if ((htype != TLS_MT_CHANGE_CIPHER_SPEC && !WPACKET_close(pkt))
+            || !WPACKET_get_length(pkt, &msglen)) {
+        return 0;
+    }
+
+    s->tls_init_num = (int)msglen;
+    s->tls_init_off = 0;
+
+    return 1;
+}
+
+int
 parse_ca_names(TLS *s, PACKET *pkt)
 {
     //const unsigned char     *namestart = NULL;
@@ -175,5 +191,6 @@ err:
 int
 tls_output_cert_chain(TLS *s, WPACKET *pkt, CERT_PKEY *cpk)
 {
+    return 1;
 }
 

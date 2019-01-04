@@ -264,12 +264,12 @@ fctls12_statem_get_client_construct_message(TLS *s, construct_message_f *func,
 }
 
 static int
-tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
+tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, WPACKET *pkt)
 {
     const TLS_CIPHER    *c = NULL;
-    uint8_t             *q = NULL;
+    size_t              totlen = 0;
+    size_t              len = 0;
     int                 i = 0;
-    int                 j = 0;
     /* Set disabled masks for this session */
     //ssl_set_client_disabled(s);
 
@@ -277,18 +277,18 @@ tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
         return 0;
     }
 
-    q = p;
-
     for (i = 0; i < sk_TLS_CIPHER_num(sk); i++) {
         c = sk_TLS_CIPHER_value(sk, i);
-        j = s->tls_method->md_put_cipher_by_char(c, p);
-        p += j;
+        if (!s->tls_method->md_put_cipher_by_char(c, pkt, &len)) {
+            return 0;
+        }
+        totlen += len;
     }
     /*
      * If p == q, no ciphers; caller indicates an error. Otherwise, add
      * applicable SCSVs.
      */
-    if (p != q) {
+    if (totlen != 0) {
 #if 0
         if (s->mode & TLS_MODE_SEND_FALLBACK_SCSV) {
             static TLS_CIPHER scsv = {
@@ -300,20 +300,25 @@ tls_cipher_list_to_bytes(TLS *s, FC_STACK_OF(TLS_CIPHER) *sk, uint8_t *p)
 #endif
     }
 
-    return (p - q);
+    return 1;
 }
 
 static int
 tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
 {
-    client_hello_t  *ch = NULL;
-    unsigned char   *p = NULL;
+    TLS1_2_RANDOM   *random = NULL;
     TLS_SESSION     *sess = s->tls_session;
-    int             i = 0;
+    unsigned char   *session_id = NULL;
+    size_t          sess_id_len = 0;
 
-    FC_LOG("in\n");
+    if (!WPACKET_set_max_size(pkt, FC_TLS_RT_MAX_PLAIN_LENGTH)) {
+        FC_LOG("Err\n");
+        goto err;
+    }
     
-    if (WPACKET_allocate_bytes(pkt, sizeof(*ch), (unsigned char **)&ch) == 0) {
+    random = &s->tls_state.st_tls1_2.client_random;
+    if (!WPACKET_put_bytes_u16(pkt, s->tls_version) ||
+            !WPACKET_memcpy(pkt, random, sizeof(*random))) {
         FC_LOG("Err\n");
         goto err;
     }
@@ -323,14 +328,26 @@ tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
             goto err;
         }
     }
-    ch->ch_version = FC_HTONS(s->tls_version);
-    p = (void *)(ch + 1);
-    /* Ciphers supported */
-    i = tls_cipher_list_to_bytes(s, FCTLS_get_ciphers(s), &(p[2]));
-    if (i == 0) {
-        FC_LOG("Err\n");
+
+    if (!WPACKET_start_sub_packet_u8(pkt) ||
+            (sess_id_len && !WPACKET_memcpy(pkt, session_id, sess_id_len)) ||
+            !WPACKET_close(pkt)) {
         goto err;
     }
+
+    if (!WPACKET_start_sub_packet_u16(pkt)) {
+        goto err;
+    }
+
+    /* Ciphers supported */
+    if (!tls_cipher_list_to_bytes(s, FCTLS_get_ciphers(s), pkt)) {
+        goto err;
+    }
+
+    if (!WPACKET_close(pkt)) {
+        goto err;
+    }
+
 #if 0
     /*
      * Some servers hang if client hello > 256 bytes as hack workaround
@@ -341,15 +358,6 @@ tls1_2_construct_client_hello(TLS *s, WPACKET *pkt)
         && i > OPENTLS_MAX_TLS1_2_CIPHER_LENGTH)
         i = OPENTLS_MAX_TLS1_2_CIPHER_LENGTH & ~1;
 #endif
-    if (WPACKET_put_bytes_u16(pkt, i) == 0) {
-        FC_LOG("Err\n");
-        goto err;
-    }
-
-    if (WPACKET_allocate_bytes(pkt, i, NULL) == 0) {
-        FC_LOG("Err\n");
-        goto err;
-    }
 
     if (!WPACKET_put_bytes_u8(pkt, 1)
             || !WPACKET_put_bytes_u8(pkt, 0)) {
