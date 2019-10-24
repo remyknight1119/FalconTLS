@@ -81,6 +81,28 @@ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
     },
 };
 
+static const uint16_t tls12_sigalgs[] = {
+    TLSEXT_SIGALG_ecdsa_secp256r1_sha256,
+    TLSEXT_SIGALG_ecdsa_secp384r1_sha384,
+    TLSEXT_SIGALG_ecdsa_secp521r1_sha512,
+    TLSEXT_SIGALG_rsa_pss_pss_sha256,
+    TLSEXT_SIGALG_rsa_pss_pss_sha384,
+    TLSEXT_SIGALG_rsa_pss_pss_sha512,
+    TLSEXT_SIGALG_rsa_pss_rsae_sha256,
+    TLSEXT_SIGALG_rsa_pss_rsae_sha384,
+    TLSEXT_SIGALG_rsa_pss_rsae_sha512,
+    TLSEXT_SIGALG_rsa_pkcs1_sha256,
+    TLSEXT_SIGALG_rsa_pkcs1_sha384,
+    TLSEXT_SIGALG_rsa_pkcs1_sha512,
+    TLSEXT_SIGALG_ecdsa_sha224,
+    TLSEXT_SIGALG_ecdsa_sha1,
+    TLSEXT_SIGALG_rsa_pkcs1_sha224,
+    TLSEXT_SIGALG_rsa_pkcs1_sha1,
+    TLSEXT_SIGALG_gostr34102012_256_gostr34112012_256,
+    TLSEXT_SIGALG_gostr34102012_512_gostr34112012_512,
+    TLSEXT_SIGALG_gostr34102001_gostr3411,
+};
+
 void
 tls_set_record_header(TLS *s, void *record, uint16_t tot_len, int mt)
 {
@@ -457,6 +479,42 @@ tls1_process_sigalgs(TLS *s)
     }
 #endif
     return 1;
+}
+
+size_t
+tls12_get_psigalgs(TLS *s, int sent, const uint16_t **psigs)
+{
+    *psigs = tls12_sigalgs;
+
+    return FC_ARRAY_SIZE(tls12_sigalgs);
+}
+
+static int
+tls12_sigalg_allowed(TLS *s, int op, const SIGALG_LOOKUP *lu)
+{
+    return 1;
+}
+
+int
+tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen)
+{
+    size_t i = 0;
+    int rv = 0;
+
+    for (i = 0; i < psiglen; i++, psig++) {
+        const SIGALG_LOOKUP *lu = tls1_lookup_sigalg(*psig);
+        if (!tls12_sigalg_allowed(s, 0, lu)) {
+            continue;
+        }
+        if (!WPACKET_put_bytes_u16(pkt, *psig)) {
+            return 0;
+        }
+        if (rv == 0) {
+            rv = 1;
+        }
+    }
+
+    return rv;
 }
 
 

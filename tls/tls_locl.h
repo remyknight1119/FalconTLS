@@ -460,6 +460,8 @@ int tls_get_new_session(TLS *s, int session);
 int tls_cert_lookup_by_nid(int nid, size_t *pidx);
 int tls1_save_sigalgs(TLS *s, PACKET *pkt, int cert);
 int tls1_process_sigalgs(TLS *s);
+size_t tls12_get_psigalgs(TLS *s, int sent, const uint16_t **psigs);
+int tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen);
 CERT *tls_cert_new(void);
 void tls_cert_free(CERT *c);
 

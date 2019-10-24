@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <falcontls/types.h>
+#include <fc_log.h>
 
 #include "packet_locl.h"
 #include "record_locl.h"
@@ -56,6 +57,7 @@ wpacket_intern_init_len(WPACKET *pkt, size_t lenbytes)
     if (!WPACKET_allocate_bytes(pkt, lenbytes, &lenchars)) {
         FALCONTLS_free(pkt->wk_subs);
         pkt->wk_subs = NULL;
+        FC_LOG("WPACKET allocate error!\n");
         return 0;
     }
     pkt->wk_subs->ws_packet_len = lenchars - WPKT_GETBUF(pkt);
@@ -117,6 +119,7 @@ WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size)
     assert(size <= sizeof(unsigned int));
     if (!WPACKET_allocate_bytes(pkt, size, &data)
             || !put_value(data, val, size)) {
+        FC_LOG("fail\n");
         return 0;
     }
 
@@ -182,6 +185,7 @@ WPACKET_start_sub_packet_len(WPACKET *pkt, size_t lenbytes)
     }
 
     if (!WPACKET_allocate_bytes(pkt, lenbytes, &lenchars)) {
+        FC_LOG("fail\n");
         return 0;
     }
     /* Convert to an offset in case the underlying BUF_MEM gets realloc'd */

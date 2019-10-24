@@ -13,6 +13,9 @@ typedef EXT_RETURN (*EXT_CONSTRUCT_F)(TLS *s, WPACKET *pkt, uint32_t context,
 
 static int init_etm(TLS *s, unsigned int context);
 static int init_ems(TLS *s, unsigned int context);
+static int init_sig_algs(TLS *s, unsigned int context);
+static int final_sig_algs(TLS *s, unsigned int context, int sent);
+
 static int final_ems(TLS *s, unsigned int context, int sent);
 static int final_ec_pt_formats(TLS *s, unsigned int context, int sent);
 
@@ -70,6 +73,16 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_construct_ctos = tls_construct_ctos_ems,
         .ed_final = final_ems,
     },
+    {
+        .ed_type = TLSEXT_TYPE_signature_algorithms,
+        .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+        .ed_init = init_sig_algs,
+        .ed_parse_ctos = tls_parse_ctos_sig_algs,
+        .ed_parse_stoc = tls_parse_stoc_sig_algs,
+        .ed_construct_stoc = tls_construct_stoc_sig_algs,
+        .ed_construct_ctos = tls_construct_ctos_sig_algs,
+        .ed_final = final_sig_algs,
+    },
 };
 
 #define EXTENSION_DEF_SIZE FC_ARRAY_SIZE(ext_defs)
@@ -123,6 +136,18 @@ init_ems(TLS *s, unsigned int context)
 
 static int
 final_ems(TLS *s, unsigned int context, int sent)
+{
+    return 1;
+}
+
+static int
+init_sig_algs(TLS *s, unsigned int context)
+{
+    return 1;
+}
+
+static int
+final_sig_algs(TLS *s, unsigned int context, int sent)
 {
     return 1;
 }

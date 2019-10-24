@@ -21,6 +21,13 @@ tls_parse_stoc_ems(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
 }
 
 int
+tls_parse_stoc_sig_algs(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
+                    size_t chainidx)
+{
+    return 1;
+}
+
+int
 tls_parse_stoc_ec_pt_formats(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx)
 {
@@ -53,6 +60,26 @@ tls_construct_ctos_ems(TLS *s, WPACKET *pkt, uint32_t context,
 {
     if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_extended_master_secret)
             || !WPACKET_put_bytes_u16(pkt, 0)) {
+        return EXT_RETURN_FAIL;
+    }
+
+    return EXT_RETURN_SENT;
+}
+
+EXT_RETURN
+tls_construct_ctos_sig_algs(TLS *s, WPACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx)
+{
+    const uint16_t *salg = NULL;
+    size_t salglen;
+
+    salglen = tls12_get_psigalgs(s, 1, &salg);
+    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_signature_algorithms)
+            || !WPACKET_start_sub_packet_u16(pkt)
+            || !WPACKET_start_sub_packet_u16(pkt)
+            || !tls12_copy_sigalgs(s, pkt, salg, salglen)
+            || !WPACKET_close(pkt)
+            || !WPACKET_close(pkt)) {
         return EXT_RETURN_FAIL;
     }
 

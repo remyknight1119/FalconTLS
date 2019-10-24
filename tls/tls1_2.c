@@ -209,8 +209,9 @@ tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int htype)
         return 1;
     }
 
-    if (WPACKET_put_bytes_u8(pkt, htype)  == 0||
-            !WPACKET_start_sub_packet_u24(pkt) == 0) {
+    if (WPACKET_put_bytes_u8(pkt, htype)  == 0 ||
+            WPACKET_start_sub_packet_u24(pkt) == 0) {
+        FC_LOG("WPACKET error!\n");
         return 0;
     }
 
