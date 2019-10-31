@@ -60,7 +60,7 @@ fc_ssl_client_main(struct sockaddr_in *dest, char *cf, char *key,
     suite->ps_library_init();
     suite->ps_add_all_algorithms();
     suite->ps_load_error_strings();
-    ctx = suite->ps_ctx_client_new();
+    ctx = suite->ps_ctx_client_new(0);
     if (ctx == NULL) {
         return FC_ERROR;
     }

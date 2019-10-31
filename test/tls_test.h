@@ -9,8 +9,8 @@ typedef struct fc_proto_suite_t {
     int     (*ps_library_init)(void);
     void    (*ps_add_all_algorithms)(void);
     void    (*ps_load_error_strings)(void);
-    void    *(*ps_ctx_client_new)(void);
-    void    *(*ps_ctx_server_new)(void);
+    void    *(*ps_ctx_client_new)(int version);
+    void    *(*ps_ctx_server_new)(int version);
     int     (*ps_ctx_use_certificate_file)(void *ctx, const char *file);
     int     (*ps_ctx_use_privateKey_file)(void *ctx, const char *file);
     int     (*ps_ctx_check_private_key)(const void *ctx);

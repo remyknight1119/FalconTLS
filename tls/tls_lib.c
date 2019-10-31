@@ -338,4 +338,35 @@ tls_get_ciphers_by_id(TLS *s)
     return NULL;
 }
 
+int
+tls_undefined_function(TLS *s)
+{
+    return 0;
+}
+
+#define FCTLS_find_method(version, member) \
+({ \
+    const TLS_METHOD *meth = NULL; \
+    const version_info *info = NULL; \
+    \
+    info = tls_find_method_by_version(version); \
+    if (info != NULL) { \
+        meth = info->member(); \
+    } \
+    meth; \
+ })
+
+const TLS_METHOD *
+FCTLS_find_client_method_by_version(int version)
+{
+    return FCTLS_find_method(version, vi_cmeth);
+}
+
+const TLS_METHOD *
+FCTLS_find_server_method_by_version(int version)
+{
+    return FCTLS_find_method(version, vi_smeth);
+}
+
+
 

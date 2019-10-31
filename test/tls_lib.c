@@ -14,8 +14,8 @@
 static int fc_openssl_library_init(void);
 static void fc_openssl_add_all_algorighms(void);
 static void fc_openssl_load_error_strings(void);
-static void *fc_openssl_ctx_client_new(void);
-static void *fc_openssl_ctx_server_new(void);
+static void *fc_openssl_ctx_client_new(int version);
+static void *fc_openssl_ctx_server_new(int version);
 static int fc_openssl_ctx_use_certificate_file(void *ctx, const char *file);
 static int fc_openssl_ctx_use_privateKey_file(void *ctx, const char *file);
 static int fc_openssl_ctx_check_private_key(const void *ctx);
@@ -38,8 +38,8 @@ static long fc_openssl_parse_version(const char *);
 static int fc_tls_library_init(void);
 static void fc_tls_add_all_algorighms(void);
 static void fc_load_error_strings(void);
-static void *fc_tls_ctx_client_new(void);
-static void *fc_tls_ctx_server_new(void);
+static void *fc_tls_ctx_client_new(int version);
+static void *fc_tls_ctx_server_new(int version);
 static int fc_tls_ctx_use_certificate_file(void *ctx, const char *file);
 static int fc_tls_ctx_use_privateKey_file(void *ctx, const char *file);
 static int fc_tls_ctx_check_private_key(const void *ctx);
@@ -152,27 +152,15 @@ fc_openssl_add_all_algorighms(void)
 }
 
 static void *
-fc_openssl_ctx_client_new(void)
+fc_openssl_ctx_client_new(int version)
 {
-    void    *ctx = NULL;
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    return SSL_CTX_new(TLSv1_2_client_method());
-#else
-    ctx = SSL_CTX_new(TLS_client_method());
-    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
-    return ctx;
-#endif
+    return SSL_CTX_new(TLS_client_method());
 }
 
 static void *
-fc_openssl_ctx_server_new(void)
+fc_openssl_ctx_server_new(int version)
 {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-    return SSL_CTX_new(TLSv1_2_server_method());
-#else
     return SSL_CTX_new(TLS_server_method());
-#endif
 }
 
 static int 
@@ -414,15 +402,21 @@ fc_load_error_strings(void)
 }
 
 static void *
-fc_tls_ctx_client_new(void)
+fc_tls_ctx_client_new(int version)
 {
-    return FCTLS_CTX_new(FCTLS_method());
+    if (version <= 0) {
+        version = FC_TLS1_2_VERSION;
+    }
+    return FCTLS_CTX_new(FCTLS_find_client_method_by_version(version));
 }
 
 static void *
-fc_tls_ctx_server_new(void)
+fc_tls_ctx_server_new(int version)
 {
-    return FCTLS_CTX_new(FCTLS_method());
+    if (version <= 0) {
+        version = FC_TLS1_2_VERSION;
+    }
+    return FCTLS_CTX_new(FCTLS_find_server_method_by_version(version));
 }
 
 static int 

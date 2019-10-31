@@ -98,7 +98,7 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, const char *version,
         exit(1);
     }
     /* 以 TLS1.2 标准兼容方式产生一个 TLS_CTX ,即 TLS Content Text */
-    ctx = suite->ps_ctx_server_new();
+    ctx = suite->ps_ctx_server_new(ver_num);
     if (ctx == NULL) {
         FC_LOG("CTX new failed!\n");
         exit(1);
@@ -291,7 +291,7 @@ fc_ssl_client_main(struct sockaddr_in *dest, const char *version, char *cf,
         FC_LOG("Parse version failed!\n");
         exit(1);
     }
-    ctx = suite->ps_ctx_client_new();
+    ctx = suite->ps_ctx_client_new(ver_num);
     if (ctx == NULL) {
         return FC_ERROR;
     }

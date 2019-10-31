@@ -6,6 +6,33 @@
 #include "record.h"
 #include "handshake.h"
 
+static const version_info tls_version_table[] = {
+    {
+        .vi_version = FC_TLS1_3_VERSION,
+        .vi_cmeth = FCTLSv1_3_client_method,
+        .vi_smeth = FCTLSv1_3_server_method,
+    },
+    {
+        .vi_version = FC_TLS1_2_VERSION,
+        .vi_cmeth = FCTLSv1_2_client_method,
+        .vi_smeth = FCTLSv1_2_server_method,
+    },
+};
+
+const version_info *
+tls_find_method_by_version(int version)
+{
+    int     i = 0;
+
+    for (i = 0; i < FC_ARRAY_SIZE(tls_version_table); i++) {
+        if (tls_version_table[i].vi_version == version) {
+            return &tls_version_table[i];
+        }
+    }
+
+    return NULL;
+}
+
 int
 tls_do_write(TLS *s, int type)
 {
@@ -194,3 +221,10 @@ tls_output_cert_chain(TLS *s, WPACKET *pkt, CERT_PKEY *cpk)
     return 1;
 }
 
+int
+tls_get_min_max_version(const TLS *s, int *min_version, int *max_version)
+{
+    *min_version = FC_TLS1_2_VERSION;
+    *max_version = FC_TLS1_3_VERSION;
+    return 0;
+}

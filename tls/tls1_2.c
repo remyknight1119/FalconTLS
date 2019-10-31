@@ -6,16 +6,15 @@
 #include <fc_log.h>
 
 #include "tls_locl.h"
+#include "tls1.h"
 #include "record.h"
 #include "handshake.h"
 #include "cipher.h"
 
-static int tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int mt);
-
 TLS_ENC_METHOD const TLSv1_2_enc_data = {
-    .em_set_handshake_header = tls1_2_set_handshake_header,
+    .em_set_handshake_header = tls_set_handshake_header,
     .em_hhlen = TLS_HM_HEADER_LENGTH,
-    .em_do_write = tls1_2_handshake_write,
+    .em_do_write = tls_handshake_write,
     .em_enc_flags = TLS_ENC_FLAG_SIGALGS,
 };
 
@@ -193,28 +192,6 @@ tls1_2_read(TLS *s, void *buf, int len)
 int
 tls1_2_peek(TLS *s, void *buf, int len)
 {
-    return 1;
-}
-
-int
-tls1_2_handshake_write(TLS *s)
-{
-    return tls_do_write(s, TLS1_2_RT_HANDSHAKE);
-}
-
-int
-tls1_2_set_handshake_header(TLS *s, WPACKET *pkt, int htype)
-{
-    if (htype == TLS_MT_CHANGE_CIPHER_SPEC) {
-        return 1;
-    }
-
-    if (WPACKET_put_bytes_u8(pkt, htype)  == 0 ||
-            WPACKET_start_sub_packet_u24(pkt) == 0) {
-        FC_LOG("WPACKET error!\n");
-        return 0;
-    }
-
     return 1;
 }
 

@@ -233,10 +233,10 @@ typedef struct sigalg_lookup_t {
 
 #define TLS1_2_RANDOM_BYTE_LEN      28
 
-typedef struct tls1_2_random_t {
+typedef struct tls_random_t {
     uint32_t        rm_unixt_time;
     uint8_t         rm_random_bytes[TLS1_2_RANDOM_BYTE_LEN];
-} TLS1_2_RANDOM;
+} TLS_RANDOM;
 
 typedef struct tls_state_t {
     size_t                  st_message_size;
@@ -250,12 +250,14 @@ typedef struct tls_state_t {
     size_t                  st_peer_sigalgslen;
     size_t                  st_peer_cert_sigalgslen;
     uint32_t                st_valid_flags[TLS_PKEY_NUM];
+    TLS_RANDOM              st_client_random;
+    TLS_RANDOM              st_server_random;
+#if 0
     union                   {
         struct {
-            TLS1_2_RANDOM   client_random;
-            TLS1_2_RANDOM   server_random;
         } st_tls1_2;
     };
+#endif
 } TLS_STATE;
 
 struct tls_session_t {
@@ -290,8 +292,8 @@ struct tls_t {
     const TLS_CIPHER            *tls_cipher;
     CERT                        *tls_cert;
     int                         (*tls_handshake_func)(TLS *);
-    uint16_t                    tls_version;
-    uint16_t                    tls_client_version;
+    int                         tls_version;
+    int                         tls_client_version;
     int                         tls_fd;
     int                         tls_init_off;
     void                        *tls_init_msg;
@@ -366,7 +368,7 @@ struct tls_ctx_t {
 }; 
 
 struct tls_method_t {
-    uint16_t                md_version;
+    int                     md_version;
     unsigned                md_flags;
     ulong                   md_mask;
     int                     (*md_tls_new)(TLS *s);
@@ -419,6 +421,13 @@ struct tls_cipher_t {
 };
 
 TLS_ENC_METHOD const TLSv1_2_enc_data;
+TLS_ENC_METHOD const TLSv1_3_enc_data;
+
+typedef struct {  
+    int                 vi_version;
+    const TLS_METHOD    *(*vi_cmeth)(void);
+    const TLS_METHOD    *(*vi_smeth)(void);
+} version_info;
 
 #define IMPLEMENT_tls_meth_func(version, flags, mask, func_name, s_accept, \
                                  s_connect, enc_data) \
@@ -445,6 +454,7 @@ TLS_ENC_METHOD const TLSv1_2_enc_data;
     }
 
 
+int tls_undefined_function(TLS *s);
 int tls1_2_handshake_write(TLS *s);
 int tls12_check_peer_sigalg(TLS *s, uint16_t sig, FC_EVP_PKEY *pkey);
 int tls_do_write(TLS *s, int type);
@@ -465,5 +475,6 @@ size_t tls12_get_psigalgs(TLS *s, int sent, const uint16_t **psigs);
 int tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen);
 CERT *tls_cert_new(void);
 void tls_cert_free(CERT *c);
+const version_info *tls_find_method_by_version(int version);
 
 #endif

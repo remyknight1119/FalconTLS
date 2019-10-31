@@ -4,6 +4,7 @@
 #include <falcontls/types.h>
 #include <falcontls/safestack.h>
 
+#define FC_TLS_ANY_VERSION                  0x10000
 #define FC_TLS1_2_VERSION                   0x0303
 #define FC_TLS1_3_VERSION                   0x0304
 #define FC_TLS_MAX_VERSION                  FC_TLS1_3_VERSION
@@ -72,7 +73,15 @@ extern int FCTLS_shutdown(TLS *s);
 extern int FCTLS_init(void);
 extern void FalconTLS_add_all_algorighms(void);
 extern const TLS_METHOD *FCTLS_method(void);
+extern const TLS_METHOD *FCTLSv1_2_method(void);
+extern const TLS_METHOD *FCTLSv1_3_method(void);
+extern const TLS_METHOD *FCTLSv1_2_client_method(void);
+extern const TLS_METHOD *FCTLSv1_2_server_method(void);
+extern const TLS_METHOD *FCTLSv1_3_client_method(void);
+extern const TLS_METHOD *FCTLSv1_3_server_method(void);
 extern FC_STACK_OF(TLS_CIPHER) *FCTLS_get_ciphers(const TLS *s);
+const TLS_METHOD *FCTLS_find_client_method_by_version(int version);
+const TLS_METHOD *FCTLS_find_server_method_by_version(int version);
 
 extern TLS_SESSION *TLS_SESSION_new(void);
 extern void TLS_SESSION_free(TLS_SESSION *ss);

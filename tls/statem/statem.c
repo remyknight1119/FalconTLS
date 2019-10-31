@@ -303,6 +303,20 @@ end:
 }
 
 int
+tls_statem_accept(TLS *s)
+{
+    return tls_state_machine(s, 1, &tls_server_read_statem_proc,
+            &tls_server_write_statem_proc);
+}
+
+int
+tls_statem_connect(TLS *s)
+{
+    return tls_state_machine(s, 0, &tls_client_read_statem_proc,
+            &tls_client_write_statem_proc);
+}
+
+int
 tls12_statem_accept(TLS *s)
 {
     return tls_state_machine(s, 1, &tls12_server_read_statem_proc,
@@ -314,6 +328,20 @@ tls12_statem_connect(TLS *s)
 {
     return tls_state_machine(s, 0, &tls12_client_read_statem_proc,
             &tls12_client_write_statem_proc);
+}
+
+int
+tls13_statem_accept(TLS *s)
+{
+    return tls_state_machine(s, 1, &tls13_server_read_statem_proc,
+            &tls13_server_write_statem_proc);
+}
+
+int
+tls13_statem_connect(TLS *s)
+{
+    return tls_state_machine(s, 0, &tls13_client_read_statem_proc,
+            &tls13_client_write_statem_proc);
 }
 
 int

@@ -1,6 +1,8 @@
 #ifndef __TLS1_H__
 #define __TLS1_H__
 
+#include "packet_locl.h"
+
 #define TLSEXT_TYPE_server_name                 0
 #define TLSEXT_TYPE_max_fragment_length         1
 #define TLSEXT_TYPE_client_certificate_url      2
@@ -37,5 +39,14 @@
 #define TLSEXT_ECCURVE_X448             30
 #define TLSEXT_ECCURVE_SECP521r1        25
 #define TLSEXT_ECCURVE_SECP384r1        24
+
+#define TLS_RT_CHANGE_CIPHER_SPEC       20
+#define TLS_RT_ALERT                    21
+#define TLS_RT_HANDSHAKE                22
+#define TLS_RT_APPLICATION_DATA         23
+#define DTLS_RT_HEARTBEAT               24
+
+int tls_handshake_write(TLS *s);
+int tls_set_handshake_header(TLS *s, WPACKET *pkt, int htype);
 
 #endif

@@ -165,10 +165,18 @@ typedef struct tls_write_statem_t {
                                 construct_message_f *func, int *m_type);
 } TLS_WRITE_STATEM;
 
+TLS_READ_STATEM tls_client_read_statem_proc;
+TLS_WRITE_STATEM tls_client_write_statem_proc;
+TLS_READ_STATEM tls_server_read_statem_proc;
+TLS_WRITE_STATEM tls_server_write_statem_proc;
 TLS_READ_STATEM tls12_client_read_statem_proc;
 TLS_WRITE_STATEM tls12_client_write_statem_proc;
 TLS_READ_STATEM tls12_server_read_statem_proc;
 TLS_WRITE_STATEM tls12_server_write_statem_proc;
+TLS_READ_STATEM tls13_client_read_statem_proc;
+TLS_WRITE_STATEM tls13_client_write_statem_proc;
+TLS_READ_STATEM tls13_server_read_statem_proc;
+TLS_WRITE_STATEM tls13_server_write_statem_proc;
 
 void tls_statem_clear(TLS *s);
 int tls_stream_get_construct_message(TLS *s, construct_message_f *func,
@@ -177,8 +185,12 @@ process_message_f tls_stream_get_process_message(TLS *s,
         TLS_PROCESS_MESSAGE *array, size_t size);
 process_key_exchange_f tls_stream_get_process_key_exchange(uint64_t alg_k,
             TLS_PROCESS_KEY_EXCHANGE *array, size_t size);
+int tls_statem_accept(TLS *s);
+int tls_statem_connect(TLS *s);
 int tls12_statem_accept(TLS *s);
 int tls12_statem_connect(TLS *s);
+int tls13_statem_accept(TLS *s);
+int tls13_statem_connect(TLS *s);
 int tls_get_message_header(TLS *s, int *mt);
 int tls_get_message_body(TLS *s, size_t *len);
 int TLS_in_init(TLS *s);
