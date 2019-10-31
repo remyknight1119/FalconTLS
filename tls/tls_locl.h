@@ -291,6 +291,7 @@ struct tls_t {
     CERT                        *tls_cert;
     int                         (*tls_handshake_func)(TLS *);
     uint16_t                    tls_version;
+    uint16_t                    tls_client_version;
     int                         tls_fd;
     int                         tls_init_off;
     void                        *tls_init_msg;

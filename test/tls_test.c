@@ -50,6 +50,7 @@ fc_options[] = {
 	"--port         -p	Port for TLS communication\n",	
 	"--certificate  -c	certificate file\n",	
 	"--key          -k	private key file\n",	
+	"--version      -v	TLS vserion(tlsv1.2,tlsv1.3)\n",	
 	"--client       -C	Client use openssl lib\n",	
 	"--server       -S	Server use openssl lib\n",	
 	"--help         -H	Print help information\n",	
@@ -64,8 +65,8 @@ fc_add_epoll_event(int epfd, struct epoll_event *ev, int fd)
 }
 
 static int
-fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, char *cf,
-        char *key, const PROTO_SUITE *suite, char *peer_cf)
+fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, const char *version,
+        char *cf, char *key, const PROTO_SUITE *suite, char *peer_cf)
 {
     void                *ctx = NULL;
     void                *ssl = NULL;
@@ -76,6 +77,7 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, char *cf,
     socklen_t           len = 0;
     ssize_t             rlen = 0;
     ssize_t             wlen = 0;
+    long                ver_num = 0;
     int                 sockfd = 0;
     int                 efd = 0;
     int                 new_fd = 0;
@@ -90,12 +92,19 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, char *cf,
     suite->ps_add_all_algorithms();
     /* 载入所有 TLS 错误消息 */
     suite->ps_load_error_strings();
+    ver_num = suite->ps_parse_version(version);
+    if (ver_num < 0) {
+        FC_LOG("Parse version failed!\n");
+        exit(1);
+    }
     /* 以 TLS1.2 标准兼容方式产生一个 TLS_CTX ,即 TLS Content Text */
     ctx = suite->ps_ctx_server_new();
     if (ctx == NULL) {
         FC_LOG("CTX new failed!\n");
         exit(1);
     }
+    suite->ps_ctx_set_max_proto_version(ctx, ver_num);
+    suite->ps_ctx_set_min_proto_version(ctx, ver_num);
     /* 载入用户的数字证书, 此证书用来发送给客户端。 证书里包含有公钥 */
     if (suite->ps_ctx_use_certificate_file(ctx, cf) < 0) {
         FC_LOG("Load certificate failed!\n");
@@ -236,10 +245,10 @@ out:
 }
 
 static int
-fc_ssl_server(int pipefd, struct sockaddr_in *addr, char *cf,
-        char *key, const PROTO_SUITE *suite, char *peer_cf)
+fc_ssl_server(int pipefd, struct sockaddr_in *addr, const char *version,
+        char *cf, char *key, const PROTO_SUITE *suite, char *peer_cf)
 {
-    return fc_ssl_server_main(pipefd, addr, cf, key, suite, peer_cf);
+    return fc_ssl_server_main(pipefd, addr, version, cf, key, suite, peer_cf);
 }
 
 #if 0
@@ -263,24 +272,32 @@ void ShowCerts(TLS * ssl)
 #endif
 
 static int 
-fc_ssl_client_main(struct sockaddr_in *dest, char *cf, char *key,
-        const PROTO_SUITE *suite, char *peer_cf)
+fc_ssl_client_main(struct sockaddr_in *dest, const char *version, char *cf,
+        char *key, const PROTO_SUITE *suite, char *peer_cf)
 {
-    int         sockfd = 0;
-    int         len = 0;
-    char        buffer[FC_BUF_MAX_LEN] = {};
     TLS_CTX     *ctx = NULL;
     TLS         *ssl = NULL;
+    char        buffer[FC_BUF_MAX_LEN] = {};
+    long        ver_num = 0;
+    int         sockfd = 0;
+    int         len = 0;
     int         ret = FC_OK;
 
     suite->ps_library_init();
     suite->ps_add_all_algorithms();
     suite->ps_load_error_strings();
+    ver_num = suite->ps_parse_version(version);
+    if (ver_num < 0) {
+        FC_LOG("Parse version failed!\n");
+        exit(1);
+    }
     ctx = suite->ps_ctx_client_new();
     if (ctx == NULL) {
         return FC_ERROR;
     }
 
+    suite->ps_ctx_set_max_proto_version(ctx, ver_num);
+    suite->ps_ctx_set_min_proto_version(ctx, ver_num);
     /* 载入用户的数字证书, 此证书用来发送给客户端。 证书里包含有公钥 */
     if (suite->ps_ctx_use_certificate_file(ctx, cf) < 0) {
         FC_LOG("Load certificate %s failed!\n", cf);
@@ -359,8 +376,8 @@ fc_ssl_client_main(struct sockaddr_in *dest, char *cf, char *key,
 }
 
 static int
-fc_ssl_client(int pipefd, struct sockaddr_in *addr, char *cf, 
-        char *key, const PROTO_SUITE *suite, char *peer_cf)
+fc_ssl_client(int pipefd, struct sockaddr_in *addr, const char *version,
+        char *cf, char *key, const PROTO_SUITE *suite, char *peer_cf)
 {
     char                buf[FC_BUF_MAX_LEN] = {};
     ssize_t             rlen = 0;
@@ -377,7 +394,7 @@ fc_ssl_client(int pipefd, struct sockaddr_in *addr, char *cf,
         FC_LOG("Read from pipefd failed(errno=%s)\n", strerror(errno));
         return FC_ERROR;
     }
-    ret = fc_ssl_client_main(addr, cf, key, suite, peer_cf);
+    ret = fc_ssl_client_main(addr, version, cf, key, suite, peer_cf);
     if (ret != FC_OK) {
         close(pipefd);
         return FC_ERROR;
@@ -414,18 +431,11 @@ fc_help(void)
 }
 
 static const char *
-fc_optstring = "HCSp:c:k:";
+fc_optstring = "HCSp:c:k:v:";
 
 int
 main(int argc, char **argv)  
 {
-    int                     c = 0;
-    int                     fd[2] = {};
-    struct sockaddr_in      addr = {
-        .sin_family = AF_INET,
-    };
-    pid_t                   pid = 0;
-    uint16_t                pport = 0;
     const PROTO_SUITE       *client_suite = &fc_tls_suite;
     const PROTO_SUITE       *server_suite = &fc_tls_suite;
     char                    *ip = FC_DEF_IP_ADDRESS;
@@ -434,6 +444,14 @@ main(int argc, char **argv)
     char                    *key = NULL;
     char                    *client_cf = NULL;
     char                    *client_key = NULL;
+    char                    *version = NULL;
+    pid_t                   pid = 0;
+    uint16_t                pport = 0;
+    int                     fd[2] = {};
+    int                     c = 0;
+    struct sockaddr_in      addr = {
+        .sin_family = AF_INET,
+    };
 
     while ((c = getopt_long(argc, argv, fc_optstring, 
                     fc_long_opts, NULL)) != -1) {
@@ -460,6 +478,10 @@ main(int argc, char **argv)
 
             case 'k':
                 key = optarg;
+                break;
+
+            case 'v':
+                version = optarg;
                 break;
 
             default:
@@ -507,11 +529,11 @@ main(int argc, char **argv)
 
     if (pid > 0) {  /* Parent */
         close(fd[0]);
-        return -fc_ssl_client(fd[1], &addr, client_cf, client_key, 
+        return -fc_ssl_client(fd[1], &addr, version, client_cf, client_key, 
                 client_suite, cf);
     }
 
     /* Child */
     close(fd[1]);
-    return -fc_ssl_server(fd[0], &addr, cf, key, server_suite, client_cf);
+    return -fc_ssl_server(fd[0], &addr, version, cf, key, server_suite, client_cf);
 }

@@ -1,9 +1,10 @@
-
+#include <string.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #include <falcontls/tls.h>
 #include <falcontls/x509.h>
+#include <fc_lib.h>
 #include <fc_log.h>
 
 #include "tls_test.h"
@@ -19,6 +20,8 @@ static int fc_openssl_ctx_use_certificate_file(void *ctx, const char *file);
 static int fc_openssl_ctx_use_privateKey_file(void *ctx, const char *file);
 static int fc_openssl_ctx_check_private_key(const void *ctx);
 static int fc_openssl_ctx_set_ciphers(void *ctx);
+static long fc_openssl_ctx_set_max_proto_version(void *ctx, long version);
+static long fc_openssl_ctx_set_min_proto_version(void *ctx, long version);
 static void *fc_openssl_new(void *ctx);
 static int fc_openssl_set_fd(void *s, int fd);
 static int fc_openssl_accept(void *s);
@@ -30,6 +33,7 @@ static void fc_openssl_free(void *s);
 static void fc_openssl_ctx_free(void *ctx);
 static void fc_openssl_set_verify(void *s, int mode, char *peer_cf);
 static int fc_openssl_get_verify_result(void *s);
+static long fc_openssl_parse_version(const char *);
 
 static int fc_tls_library_init(void);
 static void fc_tls_add_all_algorighms(void);
@@ -40,6 +44,8 @@ static int fc_tls_ctx_use_certificate_file(void *ctx, const char *file);
 static int fc_tls_ctx_use_privateKey_file(void *ctx, const char *file);
 static int fc_tls_ctx_check_private_key(const void *ctx);
 static int fc_tls_ctx_set_ciphers(void *ctx);
+static long fc_tls_ctx_set_max_proto_version(void *ctx, long version);
+static long fc_tls_ctx_set_min_proto_version(void *ctx, long version);
 static void *fc_tls_new(void *ctx);
 static int fc_tls_set_fd(void *s, int fd);
 static int fc_tls_accept(void *s);
@@ -51,6 +57,7 @@ static void fc_tls_free(void *s);
 static void fc_tls_ctx_free(void *ctx);
 static void fc_tls_set_verify(void *s, int mode, char *peer_cf);
 static int fc_tls_get_verify_result(void *s);
+static long fc_tls_parse_version(const char *);
 
 const PROTO_SUITE fc_openssl_suite = {
     .ps_verify_mode = SSL_VERIFY_PEER,
@@ -63,6 +70,8 @@ const PROTO_SUITE fc_openssl_suite = {
     .ps_ctx_use_privateKey_file = fc_openssl_ctx_use_privateKey_file,
     .ps_ctx_check_private_key = fc_openssl_ctx_check_private_key,
     .ps_ctx_set_ciphers = fc_openssl_ctx_set_ciphers,
+    .ps_ctx_set_max_proto_version = fc_openssl_ctx_set_max_proto_version,
+    .ps_ctx_set_min_proto_version = fc_openssl_ctx_set_min_proto_version,
     .ps_ssl_new = fc_openssl_new,
     .ps_set_fd = fc_openssl_set_fd,
     .ps_accept = fc_openssl_accept,
@@ -74,6 +83,7 @@ const PROTO_SUITE fc_openssl_suite = {
     .ps_ctx_free = fc_openssl_ctx_free,
     .ps_set_verify = fc_openssl_set_verify,
     .ps_get_verify_result = fc_openssl_get_verify_result,
+    .ps_parse_version = fc_openssl_parse_version,
 };
 
 const PROTO_SUITE fc_tls_suite = {
@@ -87,6 +97,8 @@ const PROTO_SUITE fc_tls_suite = {
     .ps_ctx_use_privateKey_file = fc_tls_ctx_use_privateKey_file,
     .ps_ctx_check_private_key = fc_tls_ctx_check_private_key,
     .ps_ctx_set_ciphers = fc_tls_ctx_set_ciphers,
+    .ps_ctx_set_max_proto_version = fc_tls_ctx_set_max_proto_version,
+    .ps_ctx_set_min_proto_version = fc_tls_ctx_set_min_proto_version,
     .ps_ssl_new = fc_tls_new,
     .ps_set_fd = fc_tls_set_fd,
     .ps_accept = fc_tls_accept,
@@ -98,6 +110,7 @@ const PROTO_SUITE fc_tls_suite = {
     .ps_ctx_free = fc_tls_ctx_free,
     .ps_set_verify = fc_tls_set_verify,
     .ps_get_verify_result = fc_tls_get_verify_result,
+    .ps_parse_version = fc_tls_parse_version,
 };
 
 static int
@@ -241,6 +254,18 @@ fc_openssl_ctx_check_private_key(const void *ctx)
     return FC_OK;
 }
 
+static long
+fc_openssl_ctx_set_max_proto_version(void *ctx, long version)
+{
+    return SSL_CTX_set_max_proto_version(ctx, version);
+}
+
+static long
+fc_openssl_ctx_set_min_proto_version(void *ctx, long version)
+{
+    return SSL_CTX_set_min_proto_version(ctx, version);
+}
+
 static void *
 fc_openssl_new(void *ctx)
 {
@@ -331,6 +356,37 @@ fc_openssl_get_verify_result(void *s)
     return FC_OK;
 }
 
+static int
+fc_get_version(fc_version_t *v, size_t num, const char *s)
+{
+    size_t  i = 0;
+
+    for (i = 0; i < num; i++) {
+        if (strcmp(v[i].name, s) == 0) {
+            return v[i].version;
+        }
+    }
+
+    return -1;
+}
+
+static long
+fc_openssl_parse_version(const char *v)
+{
+    static fc_version_t o_version[] = {
+        {
+            .name = "tlsv1.2",
+            .version = TLS1_2_VERSION,
+        },
+        {
+            .name = "tlsv1.3",
+            .version = TLS1_3_VERSION,
+        },
+    }; 
+
+    return fc_get_version(o_version, FC_ARRAY_SIZE(o_version), v);
+}
+
 /* FalconTLS */
 static int
 fc_tls_library_init(void)
@@ -417,6 +473,18 @@ fc_tls_ctx_check_private_key(const void *ctx)
     return FC_OK;
 }
 
+static long
+fc_tls_ctx_set_max_proto_version(void *ctx, long version)
+{
+    return 0;
+}
+
+static long
+fc_tls_ctx_set_min_proto_version(void *ctx, long version)
+{
+    return 0;
+}
+
 static void *
 fc_tls_new(void *ctx)
 {
@@ -488,6 +556,23 @@ static int
 fc_tls_get_verify_result(void *s)
 {
     return FC_OK;
+}
+
+static long
+fc_tls_parse_version(const char *v)
+{
+    static fc_version_t f_version[] = {
+        {
+            .name = "tlsv1.2",
+            .version = FC_TLS1_2_VERSION,
+        },
+        {
+            .name = "tlsv1.3",
+            .version = FC_TLS1_3_VERSION,
+        },
+    }; 
+
+    return fc_get_version(f_version, FC_ARRAY_SIZE(f_version), v);
 }
 
 

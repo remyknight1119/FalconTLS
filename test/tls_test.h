@@ -15,6 +15,8 @@ typedef struct fc_proto_suite_t {
     int     (*ps_ctx_use_privateKey_file)(void *ctx, const char *file);
     int     (*ps_ctx_check_private_key)(const void *ctx);
     int     (*ps_ctx_set_ciphers)(void *ctx);
+    long    (*ps_ctx_set_max_proto_version)(void *ctx, long version);
+    long    (*ps_ctx_set_min_proto_version)(void *ctx, long version);
     void    *(*ps_ssl_new)(void *ctx);
     int     (*ps_set_fd)(void *s, int fd);
     int     (*ps_accept)(void *s);
@@ -26,7 +28,13 @@ typedef struct fc_proto_suite_t {
     void    (*ps_ctx_free)(void *ctx);
     void    (*ps_set_verify)(void *s, int mode, char *peer_cf);
     int     (*ps_get_verify_result)(void *s);
+    long    (*ps_parse_version)(const char *);
 } PROTO_SUITE;
+
+typedef struct _fc_version_t {
+    const char  *name;
+    long        version;
+} fc_version_t;
 
 extern const PROTO_SUITE fc_openssl_suite;
 extern const PROTO_SUITE fc_tls_suite;
