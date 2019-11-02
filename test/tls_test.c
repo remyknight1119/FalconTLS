@@ -86,6 +86,7 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, const char *version,
     int                 reuse = 1;
     int                 i = 0;
         
+    FC_LOG("Server start!\n");
     /* TLS 库初始化 */
     suite->ps_library_init();
     /* 载入所有 TLS 算法 */
@@ -152,7 +153,9 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, const char *version,
     fc_add_epoll_event(epfd, &ev, sockfd);
 
     while (1) {
+        FC_LOG("wait!\n");
         nfds = epoll_wait(epfd, events, FC_TEST_EVENT_MAX_NUM, -1);
+        FC_LOG("wake up!\n");
         for (i = 0; i < nfds; i++) {
             if (events[i].events & EPOLLIN) {
                 if ((efd = events[i].data.fd) < 0) {
@@ -293,6 +296,7 @@ fc_ssl_client_main(struct sockaddr_in *dest, const char *version, char *cf,
     }
     ctx = suite->ps_ctx_client_new(ver_num);
     if (ctx == NULL) {
+        FC_LOG("Create ctx failed!\n");
         return FC_ERROR;
     }
 
@@ -336,7 +340,7 @@ fc_ssl_client_main(struct sockaddr_in *dest, const char *version, char *cf,
     suite->ps_set_fd(ssl, sockfd);
     /* 建立 TLS 连接 */
     if (suite->ps_connect(ssl) == FC_ERROR) {
-        FC_LOG("Client connect failed!\n");
+        FC_LOG("SSL Client connect failed!\n");
         exit(1);
     } 
     //printf("Connected with %s encryption\n", TLS_get_cipher(ssl));

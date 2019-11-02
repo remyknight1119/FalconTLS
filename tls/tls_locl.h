@@ -417,6 +417,8 @@ struct tls_cipher_t {
     uint64_t        cp_algorithm_enc;     /* symmetric encryption */
     uint64_t        cp_algorithm_mac;     /* symmetric authentication */
     uint64_t        cp_alg_bits;          /* Number of bits for algorithm */
+    int             cp_min_tls;
+    int             cp_max_tls;
     int             cp_strength_bits;     /* Number of bits really used */
 };
 

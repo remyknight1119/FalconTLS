@@ -12,4 +12,4 @@ if [ ! -z $sample ]; then
     sudo ./tls_test -C -S -p $port -c $cert -k $key -v $version
 fi
 set -x 
-sudo ./tls_test -C -p $port -c $cert -k $key -v $version
+sudo ./tls_test -S -p $port -c $cert -k $key -v $version

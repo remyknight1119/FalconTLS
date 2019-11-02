@@ -30,6 +30,13 @@
 #define TLS1_CK_ECDHE_ECDSA_WITH_CHACHA20_POLY1305       0x0300CCA9
 #define TLS1_CK_DHE_RSA_WITH_CHACHA20_POLY1305           0x0300CCAA
 
+/* TLS v1.3 ciphersuites */
+#define TLS1_3_CK_AES_128_GCM_SHA256                     0x03001301
+#define TLS1_3_CK_AES_256_GCM_SHA384                     0x03001302
+#define TLS1_3_CK_CHACHA20_POLY1305_SHA256               0x03001303
+#define TLS1_3_CK_AES_128_CCM_SHA256                     0x03001304
+#define TLS1_3_CK_AES_128_CCM_8_SHA256                   0x03001305
+
 /* TLS v1.2 GCM ciphersuites from RFC5288 */
 #define TLS1_TXT_RSA_WITH_AES_128_GCM_SHA256            "AES128-GCM-SHA256"
 #define TLS1_TXT_RSA_WITH_AES_256_GCM_SHA384            "AES256-GCM-SHA384"
@@ -70,7 +77,15 @@
 #define TLS1_TXT_ECDHE_ECDSA_WITH_CHACHA20_POLY1305       "ECDHE-ECDSA-CHACHA20-POLY1305"
 #define TLS1_TXT_DHE_RSA_WITH_CHACHA20_POLY1305           "DHE-RSA-CHACHA20-POLY1305"
 
+#define TLS1_3_RFC_AES_128_GCM_SHA256                   "TLS_AES_128_GCM_SHA256"
+#define TLS1_3_RFC_AES_256_GCM_SHA384                   "TLS_AES_256_GCM_SHA384"
+#define TLS1_3_RFC_CHACHA20_POLY1305_SHA256             "TLS_CHACHA20_POLY1305_SHA256"
+#define TLS1_3_RFC_AES_128_CCM_SHA256                   "TLS_AES_128_CCM_SHA256"
+#define TLS1_3_RFC_AES_128_CCM_8_SHA256                 "TLS_AES_128_CCM_8_SHA256"
+
 /* Bits for algorithm_mkey (key exchange algorithm) */
+
+#define TLS_kANY                0x00000000U
 /* RSA key exchange */
 #define TLS_kRSA                0x00000001U
 /* tmp DH key no DH cert */
@@ -79,6 +94,8 @@
 #define TLS_kECDHE              0x00000004U
 
 /* Bits for algorithm_auth (server authentication) */
+
+#define TLS_aANY                0x00000000U
 /* RSA auth */
 #define TLS_aRSA                0x00000001U
 /* ECDSA auth*/

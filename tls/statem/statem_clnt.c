@@ -591,6 +591,7 @@ tls_construct_client_hello(TLS *s, WPACKET *pkt)
     size_t          sess_id_len = 0;
     int             protverr = 0;
 
+    FC_LOG("IIIIIIIIIIIIIn\n");
     if (!WPACKET_set_max_size(pkt, FC_TLS_RT_MAX_PLAIN_LENGTH)) {
         FC_LOG("Err\n");
         goto err;
