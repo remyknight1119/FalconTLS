@@ -83,6 +83,16 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_construct_ctos = tls_construct_ctos_sig_algs,
         .ed_final = final_sig_algs,
     },
+    {
+        .ed_type = TLSEXT_TYPE_supported_versions,
+        .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+        .ed_init = NULL,
+        .ed_parse_ctos = NULL,
+        .ed_parse_stoc = tls_parse_stoc_supported_versions,
+        .ed_construct_stoc = tls_construct_stoc_supported_versions,
+        .ed_construct_ctos = tls_construct_ctos_supported_versions,
+        .ed_final = NULL,
+    },
 };
 
 #define EXTENSION_DEF_SIZE FC_ARRAY_SIZE(ext_defs)

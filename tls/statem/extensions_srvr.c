@@ -74,3 +74,11 @@ tls_construct_stoc_supported_groups(TLS *s, WPACKET *pkt, uint32_t context,
 {
     return EXT_RETURN_SENT;
 }
+
+EXT_RETURN
+tls_construct_stoc_supported_versions(TLS *s, WPACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx)
+{
+    return EXT_RETURN_SENT;
+}
+

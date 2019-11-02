@@ -42,6 +42,14 @@ tls_parse_stoc_ec_pt_formats(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
     return 1;
 }
 
+int
+tls_parse_stoc_supported_versions(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
+                    size_t chainidx)
+{
+    return 1;
+}
+
+
 EXT_RETURN
 tls_construct_ctos_etm(TLS *s, WPACKET *pkt, uint32_t context,
                     FC_X509 *x, size_t chainidx)
@@ -164,6 +172,42 @@ tls_construct_ctos_supported_groups(TLS *s, WPACKET *pkt, uint32_t context,
         }
     }
     
+    return EXT_RETURN_SENT;
+}
+
+EXT_RETURN
+tls_construct_ctos_supported_versions(TLS *s, WPACKET *pkt, uint32_t context,
+                    FC_X509 *x, size_t chainidx)
+{
+    int     currv = 0;
+    int     min_version = 0;
+    int     max_version = 0;
+    int     reason = 0;
+
+    reason = tls_get_min_max_version(s, &min_version, &max_version);
+    if (reason != 0) {
+        return EXT_RETURN_FAIL;
+    }
+
+    if (max_version < FC_TLS1_3_VERSION) {
+        return EXT_RETURN_NOT_SENT;
+    }
+
+    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_supported_versions)
+            || !WPACKET_start_sub_packet_u16(pkt)
+            || !WPACKET_start_sub_packet_u8(pkt)) {
+        return EXT_RETURN_FAIL;
+    }
+
+    for (currv = max_version; currv >= min_version; currv--) {
+        if (!WPACKET_put_bytes_u16(pkt, currv)) {
+            return EXT_RETURN_FAIL;
+        }
+    }
+    if (!WPACKET_close(pkt) || !WPACKET_close(pkt)) {
+        return EXT_RETURN_FAIL;
+    }
+
     return EXT_RETURN_SENT;
 }
 
