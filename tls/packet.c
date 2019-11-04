@@ -282,3 +282,15 @@ WPACKET_cleanup(WPACKET *pkt)
     pkt->wk_subs = NULL;
 }
 
+int
+WPACKET_sub_memcpy(WPACKET *pkt, const void *src, size_t len, size_t lenbytes)
+{
+    if (!WPACKET_start_sub_packet_len(pkt, lenbytes)
+            || !WPACKET_memcpy(pkt, src, len)
+            || !WPACKET_close(pkt)) {
+        return 0;
+    }
+
+    return 1;
+}
+

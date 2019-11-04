@@ -22,7 +22,11 @@ static const TLS_GROUP_INFO nid_list[] = {
         .gi_secbits = 80,
         .gi_flags = TLS_CURVE_CHAR2,
     }, /* sect163k1 (1) */
-    {NID_sect163r1, 80, TLS_CURVE_CHAR2}, /* sect163r1 (2) */
+    {
+        .gi_nid = NID_sect163r1,
+        .gi_secbits = 80,
+        .gi_flags = TLS_CURVE_CHAR2
+    }, /* sect163r1 (2) */
     {NID_sect163r2, 80, TLS_CURVE_CHAR2}, /* sect163r2 (3) */
     {NID_sect193r1, 80, TLS_CURVE_CHAR2}, /* sect193r1 (4) */
     {NID_sect193r2, 80, TLS_CURVE_CHAR2}, /* sect193r2 (5) */
@@ -266,6 +270,48 @@ tls_generate_param_group(uint16_t id)
  err:
     FC_EVP_PKEY_CTX_free(pctx);
     return pkey;
+}
+
+FC_EVP_PKEY *
+tls_generate_pkey_group(TLS *s, uint16_t id)
+{
+    FC_EVP_PKEY             *pkey = NULL;
+    FC_EVP_PKEY_CTX         *pctx = NULL;
+    const TLS_GROUP_INFO    *ginf = NULL;
+    uint16_t                gtype = 0;
+
+    ginf = tls1_group_id_lookup(id);
+    if (ginf == NULL) {
+        goto err;
+    }
+
+    gtype = ginf->gi_flags & TLS_CURVE_TYPE;
+    if (gtype == TLS_CURVE_CUSTOM) {
+        pctx = FC_EVP_PKEY_CTX_new_id(ginf->gi_nid, NULL);
+    } else {
+        pctx = FC_EVP_PKEY_CTX_new_id(FC_EVP_PKEY_EC, NULL);
+    }
+    if (pctx == NULL) {
+        goto err;
+    }
+
+    if (FC_EVP_PKEY_keygen_init(pctx) <= 0) {
+        goto err;
+    }
+
+    if (gtype != TLS_CURVE_CUSTOM &&
+            FC_EVP_PKEY_CTX_set_ec_paramgen_curve_nid(pctx, ginf->gi_nid) <= 0) {
+        goto err;
+    }
+
+    if (FC_EVP_PKEY_keygen(pctx, &pkey) <= 0) {
+        FC_EVP_PKEY_free(pkey);
+        pkey = NULL;
+    }
+
+err:
+    FC_EVP_PKEY_CTX_free(pctx);
+    return pkey; 
 }
 
 /* Lookup TLS signature algorithm */
@@ -516,5 +562,4 @@ tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen)
 
     return rv;
 }
-
 

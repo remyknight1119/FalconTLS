@@ -397,5 +397,18 @@ int WPACKET_finish(WPACKET *pkt);
 int WPACKET_get_length(WPACKET *pkt, size_t *len);
 int WPACKET_set_max_size(WPACKET *pkt, size_t maxsize);
 int WPACKET_close(WPACKET *pkt);
+int WPACKET_sub_memcpy(WPACKET *pkt, const void *src, size_t len,
+                size_t lenbytes);
+
+/* Convenience macros for calling WPACKET_sub_memcpy with different lengths */
+#define WPACKET_sub_memcpy_u8(pkt, src, len) \
+    WPACKET_sub_memcpy((pkt), (src), (len), 1)
+#define WPACKET_sub_memcpy_u16(pkt, src, len) \
+    WPACKET_sub_memcpy((pkt), (src), (len), 2)
+#define WPACKET_sub_memcpy_u24(pkt, src, len) \
+    WPACKET_sub_memcpy((pkt), (src), (len), 3)
+#define WPACKET_sub_memcpy_u32(pkt, src, len) \
+    WPACKET_sub_memcpy((pkt), (src), (len), 4)
+
 
 #endif

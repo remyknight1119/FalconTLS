@@ -34,3 +34,10 @@ FC_EVP_PKEY_up_ref(FC_EVP_PKEY *pkey)
 {
     return EVP_PKEY_up_ref((EVP_PKEY *)pkey);
 }
+
+size_t
+FC_EVP_PKEY_get1_tls_encodedpoint(FC_EVP_PKEY *pkey, unsigned char **ppt)
+{
+    return EVP_PKEY_get1_tls_encodedpoint((EVP_PKEY *)pkey,
+            (unsigned char **)ppt);
+}

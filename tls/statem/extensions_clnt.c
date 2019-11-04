@@ -221,7 +221,31 @@ tls_construct_ctos_supported_versions(TLS *s, WPACKET *pkt, uint32_t context,
 static int
 add_key_share(TLS *s, WPACKET *pkt, unsigned int curve_id)
 {
+    FC_EVP_PKEY     *key_share_key = NULL;
+    unsigned char   *encoded_point = NULL;
+    size_t          encodedlen = 0;
+
+    key_share_key = tls_generate_pkey_group(s, curve_id);
+    if (key_share_key == NULL) {
+        return 0;
+    }
+
+    encodedlen = FC_EVP_PKEY_get1_tls_encodedpoint(key_share_key,
+            &encoded_point);
+    if (encodedlen == 0) {
+        goto err;
+    }
+
+    if (!WPACKET_put_bytes_u16(pkt, curve_id) ||
+            !WPACKET_sub_memcpy_u16(pkt, encoded_point, encodedlen)) {
+        goto err;
+    }
+
+    FALCONTLS_free(encoded_point);
     return 1;
+err:
+    FALCONTLS_free(encoded_point);
+    return 0;
 }
 
 EXT_RETURN

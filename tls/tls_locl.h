@@ -468,6 +468,7 @@ void tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
                         size_t *pgroupslen);
 int tls1_check_group_id(TLS *s, uint16_t group_id, int check_own_groups);
 FC_EVP_PKEY *tls_generate_param_group(uint16_t id);
+FC_EVP_PKEY *tls_generate_pkey_group(TLS *s, uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
 int tls_get_new_session(TLS *s, int session);
 int tls_cert_lookup_by_nid(int nid, size_t *pidx);
