@@ -26,19 +26,23 @@
 #define TLSEXT_TYPE_elliptic_curves             TLSEXT_TYPE_supported_groups
 #define TLSEXT_TYPE_ec_point_formats            11
 
+#define TLSEXT_SUPPORTED_GROUP_ECCURVE_X25519           29
+#define TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP256R1        23
+#define TLSEXT_SUPPORTED_GROUP_ECCURVE_X448             30
+#define TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP521r1        25
+#define TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP384r1        24
+#define TLSEXT_SUPPORTED_GROUP_DHE_FFDHE2048            0x100
+#define TLSEXT_SUPPORTED_GROUP_DHE_FFDHE3072            0x101
+#define TLSEXT_SUPPORTED_GROUP_DHE_FFDHE4096            0x102
+#define TLSEXT_SUPPORTED_GROUP_DHE_FFDHE6144            0x103
+#define TLSEXT_SUPPORTED_GROUP_DHE_FFDHE8192            0x104
+
 /* ECPointFormat values from RFC4492 */
 #define TLSEXT_ECPOINTFORMAT_first                      0
 #define TLSEXT_ECPOINTFORMAT_uncompressed               0
 #define TLSEXT_ECPOINTFORMAT_ansiX962_compressed_prime  1
 #define TLSEXT_ECPOINTFORMAT_ansiX962_compressed_char2  2
 #define TLSEXT_ECPOINTFORMAT_last                       2
-
-
-#define TLSEXT_ECCURVE_X25519           29
-#define TLSEXT_ECCURVE_SECP256R1        23
-#define TLSEXT_ECCURVE_X448             30
-#define TLSEXT_ECCURVE_SECP521r1        25
-#define TLSEXT_ECCURVE_SECP384r1        24
 
 #define TLS_RT_CHANGE_CIPHER_SPEC       20
 #define TLS_RT_ALERT                    21

@@ -106,6 +106,7 @@ fc_ssl_server_main(int pipefd, struct sockaddr_in *my_addr, const char *version,
     }
     suite->ps_ctx_set_max_proto_version(ctx, ver_num);
     suite->ps_ctx_set_min_proto_version(ctx, ver_num);
+    suite->ps_ctx_set_security_callback(ctx);
     /* 载入用户的数字证书, 此证书用来发送给客户端。 证书里包含有公钥 */
     if (suite->ps_ctx_use_certificate_file(ctx, cf) < 0) {
         FC_LOG("Load certificate failed!\n");
@@ -302,6 +303,7 @@ fc_ssl_client_main(struct sockaddr_in *dest, const char *version, char *cf,
 
     suite->ps_ctx_set_max_proto_version(ctx, ver_num);
     suite->ps_ctx_set_min_proto_version(ctx, ver_num);
+    suite->ps_ctx_set_security_callback(ctx);;
     /* 载入用户的数字证书, 此证书用来发送给客户端。 证书里包含有公钥 */
     if (suite->ps_ctx_use_certificate_file(ctx, cf) < 0) {
         FC_LOG("Load certificate %s failed!\n", cf);

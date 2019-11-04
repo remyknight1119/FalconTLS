@@ -85,7 +85,11 @@ FCTLS_new(TLS_CTX *ctx)
 
     s->tls_ctx = ctx;
     s->tls_method = ctx->sc_method;
-    s->tls_cert = ctx->sc_cert;
+    s->tls_cert = tls_cert_dup(ctx->sc_cert);
+    if (s->tls_cert == NULL) {
+        FC_LOG("Dup cert failed\n");
+        goto err;
+    }
 
     if (!s->tls_method->md_tls_new(s)) {
         FC_LOG("TLS new failed\n");
@@ -120,6 +124,7 @@ FCTLS_free(TLS *s)
         TLS_SESSION_free(s->tls_session);
     }
 
+    tls_cert_free(s->tls_cert);
     FALCONTLS_free(s);
 }
 
@@ -368,5 +373,15 @@ FCTLS_find_server_method_by_version(int version)
     return FCTLS_find_method(version, vi_smeth);
 }
 
+void
+FCTLS_set_security_callback(TLS *s, TLS_SEC_CB cb)
+{
+    s->tls_cert->ct_sec_cb = cb;
+}
 
+void
+FCTLS_CTX_set_security_callback(TLS_CTX *ctx, TLS_SEC_CB cb)
+{
+    ctx->sc_cert->ct_sec_cb = cb;
+}
 

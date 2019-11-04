@@ -272,10 +272,9 @@ tls_construct_ctos_key_share(TLS *s, WPACKET *pkt, uint32_t context,
      * now, just send one
      */
     for (i = 0; i < num_groups; i++) {
-#if 0
-        if (!tls_curve_allowed(s, pgroups[i], SSL_SECOP_CURVE_SUPPORTED))
+        if (!tls_curve_allowed(s, pgroups[i], TLS_SECOP_CURVE_SUPPORTED)) {
             continue;
-#endif
+        }
         curve_id = pgroups[i];
         break;
     }

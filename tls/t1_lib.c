@@ -64,12 +64,12 @@ static const unsigned char ecformats_default[] = {
 };
 
 /* The default curves */
-static const uint16_t eccurves_default[] = {
-    TLSEXT_ECCURVE_X25519,
-    TLSEXT_ECCURVE_SECP256R1,
-    TLSEXT_ECCURVE_X448,
-    TLSEXT_ECCURVE_SECP521r1,
-    TLSEXT_ECCURVE_SECP384r1,
+static const uint16_t upported_groups_default[] = {
+    TLSEXT_SUPPORTED_GROUP_ECCURVE_X25519,
+    TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP256R1,
+    TLSEXT_SUPPORTED_GROUP_ECCURVE_X448,
+    TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP521r1,
+    TLSEXT_SUPPORTED_GROUP_ECCURVE_SECP384r1,
 };
 
 static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
@@ -164,8 +164,8 @@ tls1_get_supported_groups(TLS *s, const uint16_t **pgroups,
         size_t *pgroupslen)
 {
     if (s->tls_ext.supportedgroups == NULL) {
-        *pgroups = eccurves_default;
-        *pgroupslen = FC_ARRAY_SIZE(eccurves_default);
+        *pgroups = upported_groups_default;
+        *pgroupslen = FC_ARRAY_SIZE(upported_groups_default);
     } else {
         *pgroups = s->tls_ext.supportedgroups;
         *pgroupslen = s->tls_ext.supportedgroups_len;
@@ -312,6 +312,22 @@ tls_generate_pkey_group(TLS *s, uint16_t id)
 err:
     FC_EVP_PKEY_CTX_free(pctx);
     return pkey; 
+}
+
+int
+tls_curve_allowed(TLS *s, uint16_t curve, int op)
+{
+    const TLS_GROUP_INFO *cinfo = NULL;
+    unsigned char ctmp[2];
+
+    cinfo = tls1_group_id_lookup(curve);
+    if (cinfo == NULL) {
+        return 0;
+    }
+
+    ctmp[0] = curve >> 8;
+    ctmp[1] = curve & 0xff;
+    return tls_security(s, op, cinfo->gi_secbits, cinfo->gi_nid, (void *)ctmp);
 }
 
 /* Lookup TLS signature algorithm */

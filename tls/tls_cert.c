@@ -47,6 +47,13 @@ static const TLS_CERT_LOOKUP tls_cert_info [] = {
     }, /* TLS_PKEY_ED448 */
 };
 
+static int
+tls_security_default_callback(const TLS *s, const TLS_CTX *ctx, int op,
+                int bits, int nid, void *other, void *ex)
+{
+    return 1;
+}
+
 CERT *
 tls_cert_new(void)
 {
@@ -58,11 +65,11 @@ tls_cert_new(void)
     }
 
     ret->ct_key = &(ret->ct_pkeys[TLS_PKEY_RSA]);
+    ret->ct_sec_cb = tls_security_default_callback;
+    ret->ct_sec_ex = NULL;
 #if 0
-    ret->ct_references = 1;
-    ret->sec_cb = ssl_security_default_callback;
     ret->sec_level = OPENSSL_TLS_SECURITY_LEVEL;
-    ret->sec_ex = NULL;
+    ret->ct_references = 1;
     ret->lock = CRYPTO_THREAD_lock_new();
     if (ret->lock == NULL) {
         SSLerr(SSL_F_SSL_CERT_NEW, ERR_R_MALLOC_FAILURE);
@@ -105,6 +112,19 @@ tls_cert_free(CERT *c)
     FALCONTLS_free(c);
 }
 
+CERT *
+tls_cert_dup(CERT *cert)
+{
+    CERT *ret = FALCONTLS_calloc(sizeof(*ret));
+
+    if (ret == NULL) {   
+        return NULL;     
+    }
+
+    memcpy(ret, cert, sizeof(*cert));
+
+    return ret;
+}
 
 int
 tls_cert_lookup_by_nid(int nid, size_t *pidx)
@@ -296,7 +316,8 @@ end:
 int
 tls_security(const TLS *s, int op, int bits, int nid, void *other)
 {
-    return 0;
+    return s->tls_cert->ct_sec_cb(s, NULL, op, bits, nid, other,
+                    s->tls_cert->ct_sec_ex);
 }
 
 

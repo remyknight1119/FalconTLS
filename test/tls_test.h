@@ -17,6 +17,7 @@ typedef struct fc_proto_suite_t {
     int     (*ps_ctx_set_ciphers)(void *ctx);
     long    (*ps_ctx_set_max_proto_version)(void *ctx, long version);
     long    (*ps_ctx_set_min_proto_version)(void *ctx, long version);
+    void    (*ps_ctx_set_security_callback)(void *ctx);
     void    *(*ps_ssl_new)(void *ctx);
     int     (*ps_set_fd)(void *s, int fd);
     int     (*ps_accept)(void *s);

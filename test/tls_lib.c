@@ -4,6 +4,7 @@
 
 #include <falcontls/tls.h>
 #include <falcontls/x509.h>
+#include <falcontls/evp.h>
 #include <fc_lib.h>
 #include <fc_log.h>
 
@@ -22,6 +23,7 @@ static int fc_openssl_ctx_check_private_key(const void *ctx);
 static int fc_openssl_ctx_set_ciphers(void *ctx);
 static long fc_openssl_ctx_set_max_proto_version(void *ctx, long version);
 static long fc_openssl_ctx_set_min_proto_version(void *ctx, long version);
+static void fc_openssl_ctx_set_security_callback(void *ctx);
 static void *fc_openssl_new(void *ctx);
 static int fc_openssl_set_fd(void *s, int fd);
 static int fc_openssl_accept(void *s);
@@ -46,6 +48,7 @@ static int fc_tls_ctx_check_private_key(const void *ctx);
 static int fc_tls_ctx_set_ciphers(void *ctx);
 static long fc_tls_ctx_set_max_proto_version(void *ctx, long version);
 static long fc_tls_ctx_set_min_proto_version(void *ctx, long version);
+static void fc_tls_ctx_set_security_callback(void *ctx);
 static void *fc_tls_new(void *ctx);
 static int fc_tls_set_fd(void *s, int fd);
 static int fc_tls_accept(void *s);
@@ -72,6 +75,7 @@ const PROTO_SUITE fc_openssl_suite = {
     .ps_ctx_set_ciphers = fc_openssl_ctx_set_ciphers,
     .ps_ctx_set_max_proto_version = fc_openssl_ctx_set_max_proto_version,
     .ps_ctx_set_min_proto_version = fc_openssl_ctx_set_min_proto_version,
+    .ps_ctx_set_security_callback = fc_openssl_ctx_set_security_callback,
     .ps_ssl_new = fc_openssl_new,
     .ps_set_fd = fc_openssl_set_fd,
     .ps_accept = fc_openssl_accept,
@@ -99,6 +103,7 @@ const PROTO_SUITE fc_tls_suite = {
     .ps_ctx_set_ciphers = fc_tls_ctx_set_ciphers,
     .ps_ctx_set_max_proto_version = fc_tls_ctx_set_max_proto_version,
     .ps_ctx_set_min_proto_version = fc_tls_ctx_set_min_proto_version,
+    .ps_ctx_set_security_callback = fc_tls_ctx_set_security_callback,
     .ps_ssl_new = fc_tls_new,
     .ps_set_fd = fc_tls_set_fd,
     .ps_accept = fc_tls_accept,
@@ -252,6 +257,11 @@ static long
 fc_openssl_ctx_set_min_proto_version(void *ctx, long version)
 {
     return SSL_CTX_set_min_proto_version(ctx, version);
+}
+
+static void
+fc_openssl_ctx_set_security_callback(void *ctx)
+{
 }
 
 static void *
@@ -477,6 +487,24 @@ static long
 fc_tls_ctx_set_min_proto_version(void *ctx, long version)
 {
     return 0;
+}
+
+static int
+fc_tls_security_cb(const TLS *s, const TLS_CTX *ctx, int op,
+                    int bits, int nid, void *other, void *ex)
+{
+    if (nid == FC_EVP_PKEY_X25519) {
+        printf("++++++++++++++++++++++++++++++++++++skip x25519\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+static void
+fc_tls_ctx_set_security_callback(void *ctx)
+{
+    FCTLS_CTX_set_security_callback(ctx, fc_tls_security_cb);
 }
 
 static void *

@@ -275,8 +275,11 @@ typedef struct tls_cert_pkey_t {
 } CERT_PKEY;
 
 typedef struct tls_cert_t {
-    CERT_PKEY           *ct_key;
-    CERT_PKEY           ct_pkeys[FC_EVP_PKEY_NUM];
+    CERT_PKEY   *ct_key;
+    CERT_PKEY   ct_pkeys[FC_EVP_PKEY_NUM];
+    /* Security callback */
+    TLS_SEC_CB   ct_sec_cb;
+    void        *ct_sec_ex;
 } CERT;
 
 struct tls_t {
@@ -472,12 +475,14 @@ FC_EVP_PKEY *tls_generate_pkey_group(TLS *s, uint16_t id);
 int tls_verify_cert_chain(TLS *s, FC_STACK_OF(FC_X509) *sk);
 int tls_get_new_session(TLS *s, int session);
 int tls_cert_lookup_by_nid(int nid, size_t *pidx);
+int tls_curve_allowed(TLS *s, uint16_t curve, int op);
 int tls1_save_sigalgs(TLS *s, PACKET *pkt, int cert);
 int tls1_process_sigalgs(TLS *s);
 size_t tls12_get_psigalgs(TLS *s, int sent, const uint16_t **psigs);
 int tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen);
 CERT *tls_cert_new(void);
 void tls_cert_free(CERT *c);
+CERT *tls_cert_dup(CERT *c);
 const version_info *tls_find_method_by_version(int version);
 
 #endif
