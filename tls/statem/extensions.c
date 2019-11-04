@@ -15,7 +15,7 @@ static int init_etm(TLS *s, unsigned int context);
 static int init_ems(TLS *s, unsigned int context);
 static int init_sig_algs(TLS *s, unsigned int context);
 static int final_sig_algs(TLS *s, unsigned int context, int sent);
-
+static int final_key_share(TLS *s, unsigned int context, int sent);
 static int final_ems(TLS *s, unsigned int context, int sent);
 static int final_ec_pt_formats(TLS *s, unsigned int context, int sent);
 
@@ -69,8 +69,8 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_init = init_ems,
         .ed_parse_ctos = tls_parse_ctos_ems,
         .ed_parse_stoc = tls_parse_stoc_ems,
-        .ed_construct_stoc = tls_construct_stoc_ems,
         .ed_construct_ctos = tls_construct_ctos_ems,
+        .ed_construct_stoc = tls_construct_stoc_ems,
         .ed_final = final_ems,
     },
     {
@@ -79,8 +79,8 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_init = init_sig_algs,
         .ed_parse_ctos = tls_parse_ctos_sig_algs,
         .ed_parse_stoc = tls_parse_stoc_sig_algs,
-        .ed_construct_stoc = tls_construct_stoc_sig_algs,
         .ed_construct_ctos = tls_construct_ctos_sig_algs,
+        .ed_construct_stoc = tls_construct_stoc_sig_algs,
         .ed_final = final_sig_algs,
     },
     {
@@ -89,9 +89,19 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_init = NULL,
         .ed_parse_ctos = NULL,
         .ed_parse_stoc = tls_parse_stoc_supported_versions,
-        .ed_construct_stoc = tls_construct_stoc_supported_versions,
         .ed_construct_ctos = tls_construct_ctos_supported_versions,
+        .ed_construct_stoc = tls_construct_stoc_supported_versions,
         .ed_final = NULL,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_key_share,
+        .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+        .ed_init = NULL,
+        .ed_parse_ctos = tls_parse_ctos_key_share,
+        .ed_parse_stoc = tls_parse_stoc_key_share,
+        .ed_construct_ctos = tls_construct_ctos_key_share,
+        .ed_construct_stoc = tls_construct_stoc_key_share,
+        .ed_final = final_key_share,
     },
 };
 
@@ -164,6 +174,12 @@ final_sig_algs(TLS *s, unsigned int context, int sent)
 
 static int
 final_ec_pt_formats(TLS *s, unsigned int context, int sent)
+{
+    return 1;
+}
+
+static int
+final_key_share(TLS *s, unsigned int context, int sent)
 {
     return 1;
 }

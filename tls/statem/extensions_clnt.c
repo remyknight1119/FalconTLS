@@ -49,6 +49,13 @@ tls_parse_stoc_supported_versions(TLS *s, PACKET *pkt, uint32_t context, FC_X509
     return 1;
 }
 
+int
+tls_parse_stoc_key_share(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
+                    size_t chainidx)
+{
+    return 1;
+}
+
 
 EXT_RETURN
 tls_construct_ctos_etm(TLS *s, WPACKET *pkt, uint32_t context,
@@ -208,6 +215,58 @@ tls_construct_ctos_supported_versions(TLS *s, WPACKET *pkt, uint32_t context,
         return EXT_RETURN_FAIL;
     }
 
+    return EXT_RETURN_SENT;
+}
+
+static int
+add_key_share(TLS *s, WPACKET *pkt, unsigned int curve_id)
+{
+    return 1;
+}
+
+EXT_RETURN
+tls_construct_ctos_key_share(TLS *s, WPACKET *pkt, uint32_t context,
+        FC_X509 *x, size_t chainidx)
+{
+    size_t i, num_groups = 0;
+    const uint16_t *pgroups = NULL;
+    uint16_t curve_id = 0;
+
+    /* key_share extension */
+    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_key_share)
+            /* Extension data sub-packet */
+            || !WPACKET_start_sub_packet_u16(pkt)
+            /* KeyShare list sub-packet */
+            || !WPACKET_start_sub_packet_u16(pkt)) {
+        return EXT_RETURN_FAIL;
+    }
+
+    tls1_get_supported_groups(s, &pgroups, &num_groups);
+
+    /*
+     * TODO(TLS1.3): Make the number of key_shares sent configurable. For
+     * now, just send one
+     */
+    for (i = 0; i < num_groups; i++) {
+#if 0
+        if (!tls_curve_allowed(s, pgroups[i], SSL_SECOP_CURVE_SUPPORTED))
+            continue;
+#endif
+        curve_id = pgroups[i];
+        break;
+    }
+
+    if (curve_id == 0) {
+        return EXT_RETURN_FAIL;
+    }
+
+    if (!add_key_share(s, pkt, curve_id)) {
+        return EXT_RETURN_FAIL;
+    }
+
+    if (!WPACKET_close(pkt) || !WPACKET_close(pkt)) {
+        return EXT_RETURN_FAIL;
+    }
     return EXT_RETURN_SENT;
 }
 
