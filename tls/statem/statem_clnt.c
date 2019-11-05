@@ -698,17 +698,12 @@ set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
     return 1;
 }
 
-static MSG_PROCESS_RETURN
-tls1_2_process_server_hello(TLS *s, PACKET *pkt)
+static int
+tls_parse_server_hello(TLS *s, PACKET *pkt, SERVERHELLO_MSG *msg)
 {
     TLS_RANDOM          *server_random = NULL;
-    const unsigned char *cipherchars = NULL;
     unsigned int        sversion = 0;
-    unsigned int        compression = 0;
-    PACKET              session_id = {};
-    PACKET              extpkt = {};
 
-    FC_LOG("in\n");
     if (!PACKET_get_net_2(pkt, &sversion)) {
         goto err;
     }
@@ -719,29 +714,54 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
         goto err;
     }
 
-    if (!PACKET_get_length_prefixed_1(pkt, &session_id)) {
+    if (!PACKET_get_length_prefixed_1(pkt, &msg->sm_session_id)) {
         goto err;
     }
  
-    if (!PACKET_get_bytes(pkt, &cipherchars, TLS_CIPHER_LEN)) {
+    if (!PACKET_get_bytes(pkt, &msg->sm_cipherchars, TLS_CIPHER_LEN)) {
         goto err;
     }
  
-    if (!PACKET_get_1(pkt, &compression)) {
+    if (!PACKET_get_1(pkt, &msg->sm_compression)) {
         goto err;
     }
  
     /* TLS extensions */
     if (PACKET_remaining(pkt) == 0) {
-        PACKET_null_init(&extpkt);
-    } else if (!PACKET_as_length_prefixed_2(pkt, &extpkt)
+        PACKET_null_init(&msg->sm_extpkt);
+    } else if (!PACKET_as_length_prefixed_2(pkt, &msg->sm_extpkt)
                || PACKET_remaining(pkt) != 0) {
         goto err;
     }
  
     //tls_collect_extensions
+    if (!tls_collect_extensions(s, &msg->sm_extpkt,
+                FC_TLS_EXT_TLS1_2_SERVER_HELLO
+                | FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+                &msg->sm_extensions, NULL, 1)) {
+        goto err;
+    }
 
-    if (!set_client_ciphersuite(s, cipherchars)) {
+    if (!tls_choose_client_version(s, sversion, msg->sm_extensions)) {
+        goto err;
+    }
+
+    return 1;
+err:
+    return 0;
+}
+
+static MSG_PROCESS_RETURN
+tls1_2_process_server_hello(TLS *s, PACKET *pkt)
+{
+    SERVERHELLO_MSG     msg = {};
+
+    FC_LOG("in\n");
+    if (!tls_parse_server_hello(s, pkt, &msg)) {
+        goto err;
+    }
+
+    if (!set_client_ciphersuite(s, msg.sm_cipherchars)) {
         goto err;
     }
 
@@ -757,7 +777,35 @@ err:
 static MSG_PROCESS_RETURN
 tls1_3_process_server_hello(TLS *s, PACKET *pkt)
 {
+    SERVERHELLO_MSG     msg = {};
+
+    FC_LOG("in\n");
+    if (!tls_parse_server_hello(s, pkt, &msg)) {
+        goto err;
+    }
+
+    /*
+     * In TLSv1.3 a ServerHello message signals a key change so the end of
+     * the message must be on a record boundary.
+     */
+#if 0
+    if (RECORD_LAYER_processed_read_pending(&s->rlayer)) {
+        goto err;
+    }
+#endif
+
+    /* This will set s->hit if we are resuming */
+#if 0
+    if (!tls_parse_extension(s, TLSEXT_IDX_psk,
+                FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+                msg.sm_extensions, NULL, 0)) {
+        goto err;
+    }
+#endif
+
     return MSG_PROCESS_CONTINUE_READING;
+err:
+    return MSG_PROCESS_ERROR;
 }
 
 static MSG_PROCESS_RETURN

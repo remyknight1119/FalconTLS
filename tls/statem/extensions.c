@@ -140,6 +140,53 @@ tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
     return 1;
 }
 
+int
+tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
+                        RAW_EXTENSION **res, size_t *len, int init)
+{
+    RAW_EXTENSION               *raw_extensions = NULL;
+    const EXTENSION_DEFINITION  *thisexd = NULL;
+    PACKET                      extensions = *packet;
+    PACKET                      extension = {};
+    unsigned int                type = 0;
+    size_t                      num_exts = EXTENSION_DEF_SIZE;
+    size_t                      i = 0;
+
+    raw_extensions = FALCONTLS_calloc(num_exts * sizeof(*raw_extensions));
+    if (raw_extensions == NULL) {
+        return 0;
+    }
+
+    i = 0;
+    while (PACKET_remaining(&extensions) > 0) {
+        if (!PACKET_get_net_2(&extensions, &type) ||
+                !PACKET_get_length_prefixed_2(&extensions, &extension)) {
+            goto err;
+        }
+    }
+
+    if (init) {
+        for (thisexd = ext_defs, i = 0; i < EXTENSION_DEF_SIZE;
+                i++, thisexd++) {
+            if (thisexd->init != NULL && (thisexd->context & context) != 0
+                    && extension_is_relevant(s, thisexd->context, context)
+                    && !thisexd->init(s, context)) {
+                goto err;
+            }
+        }
+    }
+
+    *res = raw_extensions;
+    if (len != NULL) {
+        *len = num_exts;
+    }
+
+    return 1;
+err:
+    FALCONTLS_free(raw_extensions);
+    return 0;
+}
+
 static int
 init_etm(TLS *s, unsigned int context)
 {

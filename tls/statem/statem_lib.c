@@ -228,3 +228,63 @@ tls_get_min_max_version(const TLS *s, int *min_version, int *max_version)
     *max_version = FC_TLS1_3_VERSION;
     return 0;
 }
+
+int
+tls_choose_client_version(TLS *s, int version, RAW_EXTENSION *extensions)
+{
+    const version_info  *vent = NULL;
+    const version_info  *table = NULL;
+    int                 ver_min = 0;
+    int                 ver_max = 0;
+    int                 origv = 0;
+    int                 ret = 0;
+
+    origv = s->tls_version;
+    s->tls_version = version;
+
+    /* This will overwrite s->version if the extension is present */
+    if (!tls_parse_extension(s, TLSEXT_IDX_supported_versions,
+                FC_TLS_EXT_TLS1_2_SERVER_HELLO
+                | FC_TLS_EXT_TLS1_3_SERVER_HELLO, extensions,
+                NULL, 0)) {
+        goto err;
+    }
+
+    switch (s->tls_method->md_version) {
+        case FC_TLS_ANY_VERSION:
+            table = tls_version_table;
+            break;
+        default:
+            if (s->tls_version != s->tls_method->md_version) {
+                s->tls_version = origv;
+                return 0;
+            }
+
+            return 1;
+    }
+
+    ret = tls_get_min_max_version(s, &ver_min, &ver_max);
+    if (ret != 0) {
+        goto err;
+    }
+
+    if (s->tls_version < ver_min || s->tls_version > ver_max) {
+        goto err;
+    }
+
+    for (vent = table; vent->vi_version != 0; ++vent) {
+        if (vent->vi_cmeth == NULL || s->tls_version != vent->vi_version) {
+            continue;
+        }
+
+        s->tls_method = vent->vi_cmeth();
+        return 1;
+    }
+
+err:
+    s->tls_version = origv;
+
+    return 0;
+}
+
+

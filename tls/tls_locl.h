@@ -425,6 +425,63 @@ struct tls_cipher_t {
     int             cp_strength_bits;     /* Number of bits really used */
 };
 
+typedef struct raw_extension_t {
+    /* Raw packet data for the extension */
+    PACKET          re_data;
+    /* Set to 1 if the extension is present or 0 otherwise */
+    int             re_present;
+    /* Set to 1 if we have already parsed the extension or 0 otherwise */
+    int             re_parsed;
+    /* The type of this extension, i.e. a TLSEXT_TYPE_* value */
+    unsigned int    re_type;
+    /* Track what order extensions are received in (0-based). */
+    size_t          re_received_order;
+} RAW_EXTENSION;
+
+typedef struct _serverhello_msg_t {
+    unsigned int        sm_compression;
+    const unsigned char *sm_cipherchars;
+    RAW_EXTENSION       *sm_extensions;
+    PACKET              sm_session_id;
+    PACKET              sm_extpkt;
+} SERVERHELLO_MSG;
+
+/*
+ * Extension index values NOTE: Any updates to these defines should be mirrored
+ * with equivalent updates to ext_defs in extensions.c
+ */
+typedef enum tlsext_index_en {
+    TLSEXT_IDX_renegotiate,
+    TLSEXT_IDX_server_name,
+    TLSEXT_IDX_max_fragment_length,
+    TLSEXT_IDX_srp,
+    TLSEXT_IDX_ec_point_formats,
+    TLSEXT_IDX_supported_groups,
+    TLSEXT_IDX_session_ticket,
+    TLSEXT_IDX_status_request,
+    TLSEXT_IDX_next_proto_neg,
+    TLSEXT_IDX_application_layer_protocol_negotiation,
+    TLSEXT_IDX_use_srtp,
+    TLSEXT_IDX_encrypt_then_mac,
+    TLSEXT_IDX_signed_certificate_timestamp,
+    TLSEXT_IDX_extended_master_secret,
+    TLSEXT_IDX_signature_algorithms_cert,
+    TLSEXT_IDX_post_handshake_auth,
+    TLSEXT_IDX_signature_algorithms,
+    TLSEXT_IDX_supported_versions,
+    TLSEXT_IDX_psk_kex_modes,
+    TLSEXT_IDX_key_share,
+    TLSEXT_IDX_cookie,
+    TLSEXT_IDX_cryptopro_bug,
+    TLSEXT_IDX_early_data,
+    TLSEXT_IDX_certificate_authorities,
+    TLSEXT_IDX_padding,
+    TLSEXT_IDX_psk,
+    /* Dummy index - must always be the last entry */
+    TLSEXT_IDX_num_builtins
+} TLSEXT_INDEX;
+
+
 TLS_ENC_METHOD const TLSv1_2_enc_data;
 TLS_ENC_METHOD const TLSv1_3_enc_data;
 

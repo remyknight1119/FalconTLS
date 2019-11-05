@@ -71,10 +71,13 @@ EXT_RETURN tls_construct_stoc_key_share(TLS *s, WPACKET *pkt,
                     uint32_t context, FC_X509 *x, size_t chainidx);
 
 int tls_parse_all_extensions(TLS *s, PACKET *pkt);
+int tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
+                        RAW_EXTENSION **res, size_t *len, int init);
 
 int parse_ca_names(TLS *s, PACKET *pkt);
 int tls_output_cert_chain(TLS *s, WPACKET *pkt, CERT_PKEY *cpk);
 int tls_close_construct_packet(TLS *s, WPACKET *pkt, int htype);
 int tls_get_min_max_version(const TLS *s, int *min_version, int *max_version);
+int tls_choose_client_version(TLS *s, int version, RAW_EXTENSION *extensions);
 
 #endif
