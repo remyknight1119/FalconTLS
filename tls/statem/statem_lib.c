@@ -4,6 +4,7 @@
 
 #include "tls_locl.h"
 #include "record.h"
+#include "statem_locl.h"
 #include "handshake.h"
 
 static const version_info tls_version_table[] = {

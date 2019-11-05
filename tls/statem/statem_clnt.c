@@ -765,7 +765,8 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
         goto err;
     }
 
-    if (!tls_parse_all_extensions(s, pkt)) {
+    if (!tls_parse_all_extensions(s, FC_TLS_EXT_TLS1_2_SERVER_HELLO,
+                msg.sm_extensions, NULL, 0, 1)) {
         goto err;
     }
 
@@ -799,6 +800,24 @@ tls1_3_process_server_hello(TLS *s, PACKET *pkt)
     if (!tls_parse_extension(s, TLSEXT_IDX_psk,
                 FC_TLS_EXT_TLS1_3_SERVER_HELLO,
                 msg.sm_extensions, NULL, 0)) {
+        goto err;
+    }
+#endif
+
+    if (!set_client_ciphersuite(s, msg.sm_cipherchars)) {
+        goto err;
+    }
+
+    if (!tls_parse_all_extensions(s, FC_TLS_EXT_TLS1_3_SERVER_HELLO,
+                msg.sm_extensions, NULL, 0, 1)) {
+        goto err;
+    }
+
+#if 0
+    if ((!s->method->ssl3_enc->setup_key_block(s)
+                || !s->method->ssl3_enc->change_cipher_state(s,
+                    SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_READ))) {
+        /* SSLfatal() already called */
         goto err;
     }
 #endif

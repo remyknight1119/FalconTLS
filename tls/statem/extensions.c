@@ -10,6 +10,8 @@
 
 typedef EXT_RETURN (*EXT_CONSTRUCT_F)(TLS *s, WPACKET *pkt, uint32_t context,
                     FC_X509 *x, size_t chainidx);
+typedef int (*EXT_PARSER_F)(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
+                    size_t chainidx);
 
 static int init_etm(TLS *s, unsigned int context);
 static int init_ems(TLS *s, unsigned int context);
@@ -23,10 +25,8 @@ typedef struct extensions_definition_t {
     uint32_t            ed_type;
     uint32_t            ed_context;
     int                 (*ed_init)(TLS *s, uint32_t context);
-    int                 (*ed_parse_ctos)(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
-                            size_t chainidx);
-    int                 (*ed_parse_stoc)(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
-                            size_t chainidx);
+    EXT_PARSER_F        ed_parse_ctos;
+    EXT_PARSER_F        ed_parse_stoc;
     EXT_CONSTRUCT_F     ed_construct_ctos;
     EXT_CONSTRUCT_F     ed_construct_stoc;
     int                 (*ed_final)(TLS *s, uint32_t context, int sent);
@@ -141,6 +141,12 @@ tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
 }
 
 int
+extension_is_relevant(TLS *s, unsigned int extctx, unsigned int thisctx)
+{
+    return 1;
+}
+
+int
 tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
                         RAW_EXTENSION **res, size_t *len, int init)
 {
@@ -168,9 +174,9 @@ tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
     if (init) {
         for (thisexd = ext_defs, i = 0; i < EXTENSION_DEF_SIZE;
                 i++, thisexd++) {
-            if (thisexd->init != NULL && (thisexd->context & context) != 0
-                    && extension_is_relevant(s, thisexd->context, context)
-                    && !thisexd->init(s, context)) {
+            if (thisexd->ed_init != NULL && (thisexd->ed_context & context) != 0
+                    && extension_is_relevant(s, thisexd->ed_context, context)
+                    && !thisexd->ed_init(s, context)) {
                 goto err;
             }
         }
@@ -232,8 +238,47 @@ final_key_share(TLS *s, unsigned int context, int sent)
 }
 
 int
-tls_parse_all_extensions(TLS *s, PACKET *pkt)
+tls_parse_all_extensions(TLS *s, int context, RAW_EXTENSION *exts, FC_X509 *x,
+                              size_t chainidx, int fin)
 {
     return 1;
 }
+
+int
+tls_parse_extension(TLS *s, TLSEXT_INDEX idx, int context,
+        RAW_EXTENSION *exts, FC_X509 *x, size_t chainidx)
+{
+    RAW_EXTENSION       *currext = &exts[idx];
+    EXT_PARSER_F        parser;
+
+    if (!currext->re_present) {
+        return 1;
+    }
+
+    if (currext->re_parsed) {
+        return 1;
+    }
+
+    currext->re_parsed = 1;
+    if (idx < EXTENSION_DEF_SIZE) {
+        const EXTENSION_DEFINITION *extdef = &ext_defs[idx];
+        if (!extension_is_relevant(s, extdef->ed_context, context)) {
+            return 1;
+        }
+        parser = s->tls_server ? extdef->ed_parse_ctos : extdef->ed_parse_stoc;
+        if (parser != NULL) {
+            return parser(s, &currext->re_data, context, x, chainidx);
+        }
+    }
+
+    return 0;
+#if 0
+    return custom_ext_parse(s, context, currext->re_type,
+            PACKET_data(&currext->re_data),
+            PACKET_remaining(&currext->re_data),
+            x, chainidx);
+
+#endif
+}
+
 
