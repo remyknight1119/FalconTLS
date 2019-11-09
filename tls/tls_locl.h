@@ -313,6 +313,7 @@ struct tls_t {
     TLS_STATEM                  tls_statem;
     bool                        tls_server;
     unsigned char               tls_early_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_handshake_secret[FC_EVP_MAX_MD_SIZE];
     const TLS_METHOD            *tls_method;
     TLS_CTX                     *tls_ctx;
     FC_BIO                      *tls_rbio;
@@ -572,7 +573,16 @@ CERT *tls_cert_dup(CERT *c);
 const version_info *tls_find_method_by_version(int version);
 FC_EVP_PKEY *tls_generate_pkey(FC_EVP_PKEY *pm);
 int tls_derive(TLS *s, FC_EVP_PKEY *privkey, FC_EVP_PKEY *pubkey, int gensecret);
+long tls_get_algorithm(TLS *s);
 const FC_EVP_MD *tls_md(int idx);
 const FC_EVP_MD *tls_handshake_md(TLS *s);
+const FC_EVP_MD *tls_prf_md(TLS *s);
+int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
+        const unsigned char *prevsecret,
+        const unsigned char *insecret,
+        size_t insecretlen,
+        unsigned char *outsecret);
+int tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
+        size_t insecretlen);
 
 #endif

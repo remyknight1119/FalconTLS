@@ -1,6 +1,8 @@
 
 #include <falcontls/types.h>
 
+#include "tls_locl.h"
+
 #define TLS_MD_NUM_IDX  TLS_MAX_DIGEST
 
 static const FC_EVP_MD *tls_digest_methods[TLS_MD_NUM_IDX];
@@ -22,3 +24,10 @@ tls_handshake_md(TLS *s)
 {
     return tls_md(tls_get_algorithm(s));
 }
+
+const FC_EVP_MD *
+tls_prf_md(TLS *s)
+{
+    return tls_md(tls_get_algorithm(s) >> TLS1_PRF_DGST_SHIFT);
+}
+
