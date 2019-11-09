@@ -92,6 +92,21 @@
 #define TLS_kDHE                0x00000002U
 /* ephemeral ECDH */
 #define TLS_kECDHE              0x00000004U
+/* synonym */
+#define TLS_kEECDH              TLS_kECDHE
+/* PSK */
+#define TLS_kPSK                0x00000008U
+/* GOST key exchange */
+#define TLS_kGOST               0x00000010U
+/* SRP */
+#define TLS_kSRP                0x00000020U
+#define TLS_kRSAPSK             0x00000040U
+#define TLS_kECDHEPSK           0x00000080U
+#define TLS_kDHEPSK             0x00000100U
+
+/* all PSK */
+
+#define TLS_PSK     (TLS_kPSK | TLS_kRSAPSK | TLS_kECDHEPSK | TLS_kDHEPSK)
 
 /* Bits for algorithm_auth (server authentication) */
 

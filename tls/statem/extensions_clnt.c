@@ -53,6 +53,38 @@ int
 tls_parse_stoc_key_share(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx)
 {
+    FC_EVP_PKEY     *ckey = NULL;
+    FC_EVP_PKEY     *skey = NULL;
+    PACKET          encoded_pt = {};
+    unsigned int    group_id = 0;
+
+    if (!PACKET_get_net_2(pkt, &group_id)) {
+        return 0;
+    }
+
+    if (!PACKET_as_length_prefixed_2(pkt, &encoded_pt)
+            || PACKET_remaining(&encoded_pt) == 0) {
+        return 0;
+    }
+
+    ckey = s->tls_state.st_pkey;
+    skey = tls_generate_pkey(ckey);
+    if (skey == NULL) {
+        return 0;
+    }
+
+    if (!FC_EVP_PKEY_set1_tls_encodedpoint(skey, PACKET_data(&encoded_pt),
+                PACKET_remaining(&encoded_pt))) {
+        FC_EVP_PKEY_free(skey);
+        return 0;
+    }
+
+    if (tls_derive(s, ckey, skey, 1) == 0) {
+        FC_EVP_PKEY_free(skey);
+        return 0;
+    }
+
+    s->tls_state.st_peer_tmp = skey; 
     return 1;
 }
 
@@ -241,6 +273,7 @@ add_key_share(TLS *s, WPACKET *pkt, unsigned int curve_id)
         goto err;
     }
 
+    s->tls_state.st_pkey = key_share_key;
     FALCONTLS_free(encoded_point);
     return 1;
 err:

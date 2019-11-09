@@ -147,7 +147,6 @@
 #define TLSEXT_SIGALG_ed25519                                   0x0807
 #define TLSEXT_SIGALG_ed448                                     0x0808
 
-
 #define TLS_ST_READ_HEADER                      0xF0
 #define TLS_ST_READ_BODY                        0xF1
 #define TLS_ST_READ_DONE                        0xF2
@@ -165,6 +164,9 @@
 #define l2n3(l,c)       (((c)[0]=(uint8_t)(((l)>>16)&0xff), \
                            (c)[1]=(uint8_t)(((l)>> 8)&0xff), \
                            (c)[2]=(uint8_t)(((l)    )&0xff)),(c)+=3)
+#define TLS_IS_TLS13(s) ((s)->tls_method->md_version >= FC_TLS1_3_VERSION \
+        && (s)->tls_method->md_version != FC_TLS_ANY_VERSION)
+
 /*
  * When adding new digest in the ssl_ciph.c and increment SSL_MD_NUM_IDX make
  * sure to update this constant too
@@ -184,6 +186,29 @@ enum {
     TLS_MD_SHA512_IDX,
     TLS_MAX_DIGEST,
 };
+
+/* Bits for algorithm (handshake digests and other extra flags) */
+
+/* Bits 0-7 are handshake MAC */
+#define TLS_HANDSHAKE_MAC_MASK          0xFF
+#define TLS_HANDSHAKE_MAC_MD5_SHA1      TLS_MD_MD5_SHA1_IDX
+#define TLS_HANDSHAKE_MAC_SHA256        TLS_MD_SHA256_IDX
+#define TLS_HANDSHAKE_MAC_SHA384        TLS_MD_SHA384_IDX
+#define TLS_HANDSHAKE_MAC_GOST94        TLS_MD_GOST94_IDX
+#define TLS_HANDSHAKE_MAC_GOST12_256    TLS_MD_GOST12_256_IDX
+#define TLS_HANDSHAKE_MAC_GOST12_512    TLS_MD_GOST12_512_IDX
+#define TLS_HANDSHAKE_MAC_DEFAULT       TLS_HANDSHAKE_MAC_MD5_SHA1
+
+/* Bits 8-15 bits are PRF */
+#define TLS1_PRF_DGST_SHIFT         8
+#define TLS1_PRF_SHA1_MD5           (TLS_MD_MD5_SHA1_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF_SHA256             (TLS_MD_SHA256_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF_SHA384             (TLS_MD_SHA384_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF_GOST94             (TLS_MD_GOST94_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF_GOST12_256         (TLS_MD_GOST12_256_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF_GOST12_512         (TLS_MD_GOST12_512_IDX << TLS1_PRF_DGST_SHIFT)
+#define TLS1_PRF                    (TLS_MD_MD5_SHA1_IDX << TLS1_PRF_DGST_SHIFT)
+
 
 enum {
     TLS_PKEY_RSA,
@@ -247,6 +272,8 @@ typedef struct tls_state_t {
     const SIGALG_LOOKUP     *st_peer_sigalg;
     uint16_t                *st_peer_sigalgs;
     uint16_t                *st_peer_cert_sigalgs;
+    FC_EVP_PKEY             *st_pkey;
+    FC_EVP_PKEY             *st_peer_tmp;
     size_t                  st_peer_sigalgslen;
     size_t                  st_peer_cert_sigalgslen;
     uint32_t                st_valid_flags[TLS_PKEY_NUM];
@@ -285,6 +312,7 @@ typedef struct tls_cert_t {
 struct tls_t {
     TLS_STATEM                  tls_statem;
     bool                        tls_server;
+    unsigned char               tls_early_secret[FC_EVP_MAX_MD_SIZE];
     const TLS_METHOD            *tls_method;
     TLS_CTX                     *tls_ctx;
     FC_BIO                      *tls_rbio;
@@ -420,6 +448,7 @@ struct tls_cipher_t {
     uint64_t        cp_algorithm_enc;     /* symmetric encryption */
     uint64_t        cp_algorithm_mac;     /* symmetric authentication */
     uint64_t        cp_alg_bits;          /* Number of bits for algorithm */
+    uint64_t        cp_algorithm;
     int             cp_min_tls;
     int             cp_max_tls;
     int             cp_strength_bits;     /* Number of bits really used */
@@ -541,5 +570,9 @@ CERT *tls_cert_new(void);
 void tls_cert_free(CERT *c);
 CERT *tls_cert_dup(CERT *c);
 const version_info *tls_find_method_by_version(int version);
+FC_EVP_PKEY *tls_generate_pkey(FC_EVP_PKEY *pm);
+int tls_derive(TLS *s, FC_EVP_PKEY *privkey, FC_EVP_PKEY *pubkey, int gensecret);
+const FC_EVP_MD *tls_md(int idx);
+const FC_EVP_MD *tls_handshake_md(TLS *s);
 
 #endif

@@ -143,6 +143,17 @@ tls_construct_extensions(TLS *s, WPACKET *pkt, uint32_t context,
 int
 extension_is_relevant(TLS *s, unsigned int extctx, unsigned int thisctx)
 {
+    int     is_tls13 = 0;
+
+    is_tls13 = TLS_IS_TLS13(s);
+
+    if ((is_tls13 && (extctx & FC_TLS_EXT_TLS1_2_AND_BELOW_ONLY) != 0)
+            || (!is_tls13 && (extctx & FC_TLS_EXT_TLS1_3_ONLY) != 0
+                && (thisctx & FC_TLS_EXT_CLIENT_HELLO) == 0)
+            || (s->tls_server && !is_tls13 && (extctx & FC_TLS_EXT_TLS1_3_ONLY) != 0)) {
+        return 0;
+    }
+
     return 1;
 }
 

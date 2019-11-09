@@ -17,6 +17,12 @@ FC_EVP_PKEY_CTX_ctrl(FC_EVP_PKEY_CTX *ctx, int keytype, int optype,
     return EVP_PKEY_CTX_ctrl((void *)ctx, keytype, optype, cmd, p1, p2);
 }
 
+FC_EVP_PKEY_CTX *
+FC_EVP_PKEY_CTX_new(FC_EVP_PKEY *pkey, FC_ENGINE *e)
+{
+    return (void *)EVP_PKEY_CTX_new((EVP_PKEY *)pkey, (ENGINE *)e);
+}
+
 void
 FC_EVP_PKEY_CTX_free(FC_EVP_PKEY_CTX *ctx)
 {

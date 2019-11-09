@@ -94,6 +94,7 @@ extern int FC_EVP_PKEY_CTX_ctrl(FC_EVP_PKEY_CTX *ctx, int keytype, int optype,
 extern int FC_EVP_PKEY_paramgen(FC_EVP_PKEY_CTX *ctx, FC_EVP_PKEY **ppkey);
 extern int FC_EVP_PKEY_keygen_init(FC_EVP_PKEY_CTX *ctx);
 extern int FC_EVP_PKEY_keygen(FC_EVP_PKEY_CTX *ctx, FC_EVP_PKEY **ppkey);
+extern FC_EVP_PKEY_CTX *FC_EVP_PKEY_CTX_new(FC_EVP_PKEY *pkey, FC_ENGINE *e);
 extern void FC_EVP_PKEY_CTX_free(FC_EVP_PKEY_CTX *ctx);
 extern int FC_EVP_PKEY_set1_tls_encodedpoint(FC_EVP_PKEY *pkey,
             const unsigned char *pt, size_t ptlen);
@@ -102,5 +103,8 @@ extern FC_EC_KEY *FC_EVP_PKEY_get0_EC_KEY(FC_EVP_PKEY *pkey);
 extern int FC_EVP_PKEY_up_ref(FC_EVP_PKEY *pkey);
 extern size_t FC_EVP_PKEY_get1_tls_encodedpoint(FC_EVP_PKEY *pkey,
             unsigned char **ppt);
+extern int FC_EVP_PKEY_derive_init(FC_EVP_PKEY_CTX *ctx);
+extern int FC_EVP_PKEY_derive_set_peer(FC_EVP_PKEY_CTX *ctx, FC_EVP_PKEY *peer);
+extern int FC_EVP_PKEY_derive(FC_EVP_PKEY_CTX *ctx, unsigned char *key, size_t *pkeylen);
 
 #endif

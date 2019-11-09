@@ -9,6 +9,7 @@
 #include "packet_locl.h"
 #include "tls_locl.h"
 #include "tls1.h"
+#include "cipher.h"
 #include "record_locl.h"
 
 /*
@@ -314,6 +315,30 @@ err:
     return pkey; 
 }
 
+FC_EVP_PKEY *
+tls_generate_pkey(FC_EVP_PKEY *pm)
+{
+    FC_EVP_PKEY_CTX     *pctx = NULL;
+    FC_EVP_PKEY         *pkey = NULL;
+
+    pctx = FC_EVP_PKEY_CTX_new(pm, NULL);
+    if (pctx == NULL) {
+        goto err;
+    }
+
+    if (FC_EVP_PKEY_keygen_init(pctx) <= 0) {
+        goto err;
+    }
+
+    if (FC_EVP_PKEY_keygen(pctx, &pkey) <= 0) {
+        FC_EVP_PKEY_free(pkey);
+        pkey = NULL;
+    }
+err:
+
+    return pkey;
+}
+
 int
 tls_curve_allowed(TLS *s, uint16_t curve, int op)
 {
@@ -577,5 +602,80 @@ tls12_copy_sigalgs(TLS *s, WPACKET *pkt, const uint16_t *psig, size_t psiglen)
     }
 
     return rv;
+}
+
+int
+tls_derive(TLS *s, FC_EVP_PKEY *privkey, FC_EVP_PKEY *pubkey, int gensecret)
+{
+    FC_EVP_PKEY_CTX     *pctx = NULL;
+    unsigned char       *pms = NULL;
+    size_t              pmslen = 0;
+    int                 rv = 0;
+
+    if (privkey == NULL || pubkey == NULL) {
+        return 0;
+    }
+
+    pctx = FC_EVP_PKEY_CTX_new(privkey, NULL);
+    if (FC_EVP_PKEY_derive_init(pctx) <= 0
+            || FC_EVP_PKEY_derive_set_peer(pctx, pubkey) <= 0
+            || FC_EVP_PKEY_derive(pctx, NULL, &pmslen) <= 0) {
+        goto err;
+    }
+
+    pms = FALCONTLS_malloc(pmslen);
+    if (pms == NULL) {
+        goto err;
+    }
+
+    if (FC_EVP_PKEY_derive(pctx, pms, &pmslen) <= 0) {
+        goto err;
+    }
+
+    if (gensecret) {
+        if (TLS_IS_TLS13(s)) {
+            rv = tls13_generate_secret(s, tls_handshake_md(s), NULL, NULL, 0,
+                    (unsigned char *)&s->tls_early_secret);
+        } else {
+            rv = 1;
+        }
+
+        rv = rv && tls13_generate_handshake_secret(s, pms, pmslen);
+    } else {
+#if 0
+        /* Save premaster secret */
+        s->s3->tmp.pms = pms;
+        s->s3->tmp.pmslen = pmslen;
+        pms = NULL;
+#endif
+        rv = 1;
+    }
+err:
+    FALCONTLS_free(pms);
+    FC_EVP_PKEY_CTX_free(pctx);
+    return rv;
+}
+
+long
+tls_get_algorithm(TLS *s)
+{
+    long    alg = 0;
+
+    if (s->tls_cipher == NULL) {
+        FC_LOG("cipher is NULL\n");
+        return -1;
+    }
+    alg = s->tls_cipher->cp_algorithm;
+    if (s->tls_method->md_tls_enc->em_enc_flags & TLS_ENC_FLAG_SHA256_PRF) {
+        if (alg == (TLS_HANDSHAKE_MAC_DEFAULT | TLS1_PRF)) {
+            return TLS_HANDSHAKE_MAC_SHA256 | TLS1_PRF_SHA256;
+        }
+    } else if (s->tls_cipher->cp_algorithm_mkey & TLS_PSK) {
+        if (alg == (TLS_HANDSHAKE_MAC_SHA384 | TLS1_PRF_SHA384)) {
+            return TLS_HANDSHAKE_MAC_DEFAULT | TLS1_PRF;
+        }
+    }
+
+    return alg;
 }
 
