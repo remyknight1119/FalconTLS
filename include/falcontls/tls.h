@@ -133,6 +133,7 @@ extern int FCTLS_shutdown(TLS *s);
 extern int FCTLS_init(void);
 extern void FalconTLS_add_all_algorighms(void);
 extern const TLS_METHOD *FCTLS_method(void);
+extern const TLS_METHOD *FCTLS_client_method(void);
 extern const TLS_METHOD *FCTLSv1_2_method(void);
 extern const TLS_METHOD *FCTLSv1_3_method(void);
 extern const TLS_METHOD *FCTLSv1_2_client_method(void);

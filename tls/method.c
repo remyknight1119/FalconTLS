@@ -8,6 +8,12 @@ IMPLEMENT_tls_meth_func(FC_TLS_ANY_VERSION, 0, 0,
          tls_statem_accept,            
          tls_statem_connect, &TLSv1_2_enc_data)
 
+IMPLEMENT_tls_meth_func(FC_TLS_ANY_VERSION, 0, 0,
+         FCTLS_client_method,                    
+         tls_undefined_function,            
+         tls_statem_connect, &TLSv1_2_enc_data)
+
+
 IMPLEMENT_tls_meth_func(FC_TLS1_2_VERSION, 0, 0,
          FCTLSv1_2_method,                    
          tls12_statem_accept,            

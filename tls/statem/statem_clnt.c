@@ -95,6 +95,7 @@ static TLS_CONSTRUCT_MESSAGE tls13_client_construct_message[] = {
 #define tls13_client_construct_message_num \
     FC_ARRAY_SIZE(tls13_client_construct_message)
 
+static MSG_PROCESS_RETURN tls_process_server_hello(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
                             PACKET *pkt);
@@ -107,7 +108,7 @@ static MSG_PROCESS_RETURN tls1_3_process_server_hello(TLS *s, PACKET *pkt);
 static TLS_PROCESS_MESSAGE tls_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_SRVR_HELLO,
-        .pm_proc = tls1_2_process_server_hello,
+        .pm_proc = tls_process_server_hello,
     },
     {
         .pm_hand_state = TLS_ST_CR_CERT,
@@ -752,7 +753,7 @@ err:
 }
 
 static MSG_PROCESS_RETURN
-tls1_2_process_server_hello(TLS *s, PACKET *pkt)
+tls_process_server_hello(TLS *s, PACKET *pkt)
 {
     SERVERHELLO_MSG     msg = {};
 
@@ -773,6 +774,13 @@ tls1_2_process_server_hello(TLS *s, PACKET *pkt)
     return MSG_PROCESS_CONTINUE_READING;
 err:
     return MSG_PROCESS_ERROR;
+}
+
+
+static MSG_PROCESS_RETURN
+tls1_2_process_server_hello(TLS *s, PACKET *pkt)
+{
+    return tls_process_server_hello(s, pkt);
 }
 
 static MSG_PROCESS_RETURN

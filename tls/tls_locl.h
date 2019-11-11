@@ -114,9 +114,12 @@
 #define TLSEXT_TYPE_post_handshake_auth         49
 #define TLSEXT_TYPE_signature_algorithms_cert   50
 #define TLSEXT_TYPE_key_share                   51
+#define TLSEXT_TYPE_cryptopro_bug               0xfde8
 
 /* Temporary extension type */
 #define TLSEXT_TYPE_renegotiate                 0xff01
+
+#define TLSEXT_TYPE_next_proto_neg              13172
 
 /* Sigalgs values */
 #define TLSEXT_SIGALG_ecdsa_secp256r1_sha256                    0x0403
@@ -336,6 +339,8 @@ struct tls_t {
     FC_EVP_PKEY                 *tls_peer_key;
     TLS_SESSION                 *tls_session;
     uint32_t                    tls_max_send_fragment;
+    enum {TLS_HRR_NONE = 0, TLS_HRR_PENDING, TLS_HRR_COMPLETE}
+                                tls_hello_retry_request;
     struct {
         size_t                  ecpointformats_len;
         unsigned char           *ecpointformats;
@@ -454,6 +459,11 @@ struct tls_cipher_t {
     int             cp_max_tls;
     int             cp_strength_bits;     /* Number of bits really used */
 };
+
+typedef struct {
+    //custom_ext_method *meths;
+    size_t  ce_meths_count;
+} custom_ext_methods;
 
 typedef struct raw_extension_t {
     /* Raw packet data for the extension */

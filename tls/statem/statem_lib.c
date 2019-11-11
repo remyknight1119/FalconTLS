@@ -248,6 +248,7 @@ tls_choose_client_version(TLS *s, int version, RAW_EXTENSION *extensions)
                 FC_TLS_EXT_TLS1_2_SERVER_HELLO
                 | FC_TLS_EXT_TLS1_3_SERVER_HELLO, extensions,
                 NULL, 0)) {
+        FC_LOG("Parse extension error\n");
         goto err;
     }
 
@@ -257,6 +258,8 @@ tls_choose_client_version(TLS *s, int version, RAW_EXTENSION *extensions)
             break;
         default:
             if (s->tls_version != s->tls_method->md_version) {
+                FC_LOG("Err: tls_version = %x, method version = %x\n",
+                        s->tls_version, s->tls_method->md_version);
                 s->tls_version = origv;
                 return 0;
             }
@@ -279,6 +282,7 @@ tls_choose_client_version(TLS *s, int version, RAW_EXTENSION *extensions)
         }
 
         s->tls_method = vent->vi_cmeth();
+        FC_LOG("version = %x\n", s->tls_method->md_version);
         return 1;
     }
 

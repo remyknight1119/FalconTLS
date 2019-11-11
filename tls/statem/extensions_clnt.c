@@ -46,6 +46,22 @@ int
 tls_parse_stoc_supported_versions(TLS *s, PACKET *pkt, uint32_t context, FC_X509 *x,
                     size_t chainidx)
 {
+    unsigned int    version = 0;
+
+    if (!PACKET_get_net_2(pkt, &version)
+            || PACKET_remaining(pkt) != 0) {
+        return 0;
+    }
+    /*
+     * The only protocol version we support which is valid in this extension in
+     * a ServerHello is TLSv1.3 therefore we shouldn't be getting anything else.
+     */
+    if (version != FC_TLS1_3_VERSION) {
+        return 0;
+    }
+
+    s->tls_version = version;
+
     return 1;
 }
 

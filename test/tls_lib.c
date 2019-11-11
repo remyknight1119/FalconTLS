@@ -417,7 +417,7 @@ fc_tls_ctx_client_new(int version)
     if (version <= 0) {
         version = FC_TLS1_2_VERSION;
     }
-    return FCTLS_CTX_new(FCTLS_find_client_method_by_version(version));
+    return FCTLS_CTX_new(FCTLS_client_method());
 }
 
 static void *

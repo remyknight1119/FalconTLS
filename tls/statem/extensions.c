@@ -35,6 +35,18 @@ typedef struct extensions_definition_t {
 
 static const EXTENSION_DEFINITION ext_defs[] = {
     {
+        .ed_type = TLSEXT_TYPE_renegotiate,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_server_name,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_max_fragment_length,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_srp,
+    },
+    {
         .ed_type = TLSEXT_TYPE_ec_point_formats,
         .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_2_SERVER_HELLO
             | FC_TLS_EXT_TLS1_2_AND_BELOW_ONLY,
@@ -53,6 +65,21 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_construct_ctos = tls_construct_ctos_supported_groups,
     },
     {
+        .ed_type = TLSEXT_TYPE_session_ticket,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_status_request,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_next_proto_neg,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_application_layer_protocol_negotiation,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_use_srtp,
+    },
+    {
         .ed_type = TLSEXT_TYPE_encrypt_then_mac,
         .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_2_SERVER_HELLO
             | FC_TLS_EXT_TLS1_2_AND_BELOW_ONLY,
@@ -61,6 +88,9 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_parse_stoc = tls_parse_stoc_etm,
         .ed_construct_stoc = tls_construct_stoc_etm,
         .ed_construct_ctos = tls_construct_ctos_etm,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_signed_certificate_timestamp,
     },
     {
         .ed_type = TLSEXT_TYPE_extended_master_secret,
@@ -72,6 +102,12 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_construct_ctos = tls_construct_ctos_ems,
         .ed_construct_stoc = tls_construct_stoc_ems,
         .ed_final = final_ems,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_signature_algorithms_cert,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_post_handshake_auth,
     },
     {
         .ed_type = TLSEXT_TYPE_signature_algorithms,
@@ -94,6 +130,9 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_final = NULL,
     },
     {
+        .ed_type = TLSEXT_TYPE_psk_kex_modes,
+    },
+    {
         .ed_type = TLSEXT_TYPE_key_share,
         .ed_context = FC_TLS_EXT_CLIENT_HELLO | FC_TLS_EXT_TLS1_3_SERVER_HELLO,
         .ed_init = NULL,
@@ -102,6 +141,24 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         .ed_construct_ctos = tls_construct_ctos_key_share,
         .ed_construct_stoc = tls_construct_stoc_key_share,
         .ed_final = final_key_share,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_cookie,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_cryptopro_bug,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_early_data,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_certificate_authorities,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_padding,
+    },
+    {
+        .ed_type = TLSEXT_TYPE_psk,
     },
 };
 
@@ -157,15 +214,44 @@ extension_is_relevant(TLS *s, unsigned int extctx, unsigned int thisctx)
     return 1;
 }
 
+static int
+verify_extension(TLS *s, unsigned int context, unsigned int type,
+        custom_ext_methods *meths, RAW_EXTENSION *rawexlist,
+        RAW_EXTENSION **found)
+{
+    const EXTENSION_DEFINITION  *thisext = NULL;
+    size_t                      i = 0;
+
+    for (i = 0, thisext = ext_defs; i < EXTENSION_DEF_SIZE; i++, thisext++) {
+        if (type != thisext->ed_type) {
+            continue;
+        }
+
+#if 0
+        if (!validate_context(s, thisext->ed_context, context)) {
+            return 0;
+        }
+#endif
+
+        *found = &rawexlist[i];
+        return 1;
+    }
+
+    return 0;
+}
+
 int
 tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
                         RAW_EXTENSION **res, size_t *len, int init)
 {
     RAW_EXTENSION               *raw_extensions = NULL;
     const EXTENSION_DEFINITION  *thisexd = NULL;
+    RAW_EXTENSION               *thisex = NULL;
+    custom_ext_methods          *exts = NULL;
     PACKET                      extensions = *packet;
     PACKET                      extension = {};
     unsigned int                type = 0;
+    unsigned int                idx = 0;
     size_t                      num_exts = EXTENSION_DEF_SIZE;
     size_t                      i = 0;
 
@@ -180,6 +266,23 @@ tls_collect_extensions(TLS *s, PACKET *packet, unsigned int context,
                 !PACKET_get_length_prefixed_2(&extensions, &extension)) {
             goto err;
         }
+        if (!verify_extension(s, context, type, exts, raw_extensions, &thisex)
+                || (thisex != NULL && thisex->re_present == 1)) {
+            FC_LOG("Verify extension failed\n");
+            goto err;
+        }
+        idx = thisex - raw_extensions;
+        if (idx < EXTENSION_DEF_SIZE /* && */) {
+        }
+
+        if (thisex == NULL) {
+            continue;
+        }
+
+        thisex->re_present = 1;
+        thisex->re_data = extension;
+        thisex->re_type = type;
+        thisex->re_received_order = i++;
     }
 
     if (init) {
@@ -245,6 +348,28 @@ final_ec_pt_formats(TLS *s, unsigned int context, int sent)
 static int
 final_key_share(TLS *s, unsigned int context, int sent)
 {
+    if (!TLS_IS_TLS13(s)) {
+        return 1;
+    }
+
+    if (s->tls_server) {
+        if (s->tls_state.st_peer_tmp != NULL) {
+        } else {
+        }
+        if (s->tls_hello_retry_request == TLS_HRR_PENDING) {
+            s->tls_hello_retry_request = TLS_HRR_COMPLETE;
+        }
+    } else {
+        /*
+         * For a client side resumption with no key_share we need to generate
+         * the handshake secret (otherwise this is done during key_share
+         * processing).
+         */
+        if (!sent && !tls13_generate_handshake_secret(s, NULL, 0)) {
+            return 0;
+        }
+    }
+
     return 1;
 }
 
@@ -260,13 +385,14 @@ tls_parse_extension(TLS *s, TLSEXT_INDEX idx, int context,
         RAW_EXTENSION *exts, FC_X509 *x, size_t chainidx)
 {
     RAW_EXTENSION       *currext = &exts[idx];
-    EXT_PARSER_F        parser;
+    EXT_PARSER_F        parser = NULL;
 
     if (!currext->re_present) {
         return 1;
     }
 
     if (currext->re_parsed) {
+        FC_LOG("re-parsed\n");
         return 1;
     }
 
@@ -274,6 +400,7 @@ tls_parse_extension(TLS *s, TLSEXT_INDEX idx, int context,
     if (idx < EXTENSION_DEF_SIZE) {
         const EXTENSION_DEFINITION *extdef = &ext_defs[idx];
         if (!extension_is_relevant(s, extdef->ed_context, context)) {
+            FC_LOG("Extension is not relevant\n");
             return 1;
         }
         parser = s->tls_server ? extdef->ed_parse_ctos : extdef->ed_parse_stoc;
