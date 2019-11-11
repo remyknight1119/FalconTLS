@@ -96,14 +96,12 @@ static TLS_CONSTRUCT_MESSAGE tls13_client_construct_message[] = {
     FC_ARRAY_SIZE(tls13_client_construct_message)
 
 static MSG_PROCESS_RETURN tls_process_server_hello(TLS *s, PACKET *pkt);
-static MSG_PROCESS_RETURN tls1_2_process_server_hello(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_certificate(TLS *s,
                             PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_key_exchange(TLS *s, PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_certificate_request(TLS *s,
                             PACKET *pkt);
 static MSG_PROCESS_RETURN tls1_2_process_server_done(TLS *s, PACKET *pkt);
-static MSG_PROCESS_RETURN tls1_3_process_server_hello(TLS *s, PACKET *pkt);
 
 static TLS_PROCESS_MESSAGE tls_client_process_message[] = {
     {
@@ -134,7 +132,7 @@ static TLS_PROCESS_MESSAGE tls_client_process_message[] = {
 static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_SRVR_HELLO,
-        .pm_proc = tls1_2_process_server_hello,
+        .pm_proc = tls_process_server_hello,
     },
     {
         .pm_hand_state = TLS_ST_CR_CERT,
@@ -160,7 +158,7 @@ static TLS_PROCESS_MESSAGE tls12_client_process_message[] = {
 static TLS_PROCESS_MESSAGE tls13_client_process_message[] = {
     {
         .pm_hand_state = TLS_ST_CR_SRVR_HELLO,
-        .pm_proc = tls1_3_process_server_hello,
+        .pm_proc = tls_process_server_hello,
     },
 };
 
@@ -744,6 +742,7 @@ tls_parse_server_hello(TLS *s, PACKET *pkt, SERVERHELLO_MSG *msg)
     }
 
     if (!tls_choose_client_version(s, sversion, msg->sm_extensions)) {
+        FC_LOG("Choose client version failed\n");
         goto err;
     }
 
@@ -756,79 +755,32 @@ static MSG_PROCESS_RETURN
 tls_process_server_hello(TLS *s, PACKET *pkt)
 {
     SERVERHELLO_MSG     msg = {};
+    int                 content = 0;
 
     FC_LOG("in\n");
     if (!tls_parse_server_hello(s, pkt, &msg)) {
+        FC_LOG("Parse server_hello failed\n");
         goto err;
     }
 
     if (!set_client_ciphersuite(s, msg.sm_cipherchars)) {
+        FC_LOG("Set client ciphersuite failed\n");
         goto err;
     }
 
-    if (!tls_parse_all_extensions(s, FC_TLS_EXT_TLS1_2_SERVER_HELLO,
-                msg.sm_extensions, NULL, 0, 1)) {
+    content = TLS_IS_TLS13(s) ?
+        FC_TLS_EXT_TLS1_3_SERVER_HELLO:FC_TLS_EXT_TLS1_2_SERVER_HELLO;
+    if (!tls_parse_all_extensions(s, content, msg.sm_extensions, NULL, 0, 1)) {
+        FC_LOG("Parse all extensions failed\n");
         goto err;
     }
 
-    return MSG_PROCESS_CONTINUE_READING;
-err:
-    return MSG_PROCESS_ERROR;
-}
-
-
-static MSG_PROCESS_RETURN
-tls1_2_process_server_hello(TLS *s, PACKET *pkt)
-{
-    return tls_process_server_hello(s, pkt);
-}
-
-static MSG_PROCESS_RETURN
-tls1_3_process_server_hello(TLS *s, PACKET *pkt)
-{
-    SERVERHELLO_MSG     msg = {};
-
-    FC_LOG("in\n");
-    if (!tls_parse_server_hello(s, pkt, &msg)) {
+    if ((!s->method->md_tls_enc->em_setup_key_block(s)
+                || !s->method->md_tls_enc->em_change_cipher_state(s,
+                    TLS_CC_HANDSHAKE | TLS_CHANGE_CIPHER_CLIENT_READ))) {
+        FC_LOG("setup key block failed\n");
         goto err;
     }
-
-    /*
-     * In TLSv1.3 a ServerHello message signals a key change so the end of
-     * the message must be on a record boundary.
-     */
-#if 0
-    if (RECORD_LAYER_processed_read_pending(&s->rlayer)) {
-        goto err;
-    }
-#endif
-
-    /* This will set s->hit if we are resuming */
-#if 0
-    if (!tls_parse_extension(s, TLSEXT_IDX_psk,
-                FC_TLS_EXT_TLS1_3_SERVER_HELLO,
-                msg.sm_extensions, NULL, 0)) {
-        goto err;
-    }
-#endif
-
-    if (!set_client_ciphersuite(s, msg.sm_cipherchars)) {
-        goto err;
-    }
-
-    if (!tls_parse_all_extensions(s, FC_TLS_EXT_TLS1_3_SERVER_HELLO,
-                msg.sm_extensions, NULL, 0, 1)) {
-        goto err;
-    }
-
-#if 0
-    if ((!s->method->ssl3_enc->setup_key_block(s)
-                || !s->method->ssl3_enc->change_cipher_state(s,
-                    SSL3_CC_HANDSHAKE | SSL3_CHANGE_CIPHER_CLIENT_READ))) {
-        /* SSLfatal() already called */
-        goto err;
-    }
-#endif
 
     return MSG_PROCESS_CONTINUE_READING;
 err:

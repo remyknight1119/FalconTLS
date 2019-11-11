@@ -7,6 +7,8 @@
 
 TLS_ENC_METHOD const TLSv1_3_enc_data = {
     .em_set_handshake_header = tls_set_handshake_header,
+    .em_setup_key_block = tls13_setup_key_block,
+    .em_change_cipher_state = tls13_change_cipher_state,
     .em_hhlen = TLS_HM_HEADER_LENGTH,
     .em_do_write = tls_handshake_write,
     .em_enc_flags = TLS_ENC_FLAG_SIGALGS,

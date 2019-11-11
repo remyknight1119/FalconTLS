@@ -7,6 +7,8 @@
 #include "statem.h"
 #include "cipher.h"
 
+#define FC_TLS_MAX_SEND_FRAGMENT_DEF    65535
+
 TLS_CTX *
 FCTLS_CTX_new(const TLS_METHOD *meth)
 {
@@ -28,6 +30,7 @@ FCTLS_CTX_new(const TLS_METHOD *meth)
         goto err;
     }
 
+    ctx->sc_max_send_fragment = FC_TLS_MAX_SEND_FRAGMENT_DEF;
     ctx->sc_cert = tls_cert_new();
     if (ctx->sc_cert == NULL) {
         goto err;

@@ -356,7 +356,9 @@ typedef struct tls_enc_method_t {
     int         (*em_enc)(TLS *, TLS_RECORD *, uint32_t, int);
     int         (*em_mac)(TLS *, TLS_RECORD *, uint8_t *, int);
     int         (*em_set_handshake_header)(TLS *s, WPACKET *pkt, int mt);
-    int         (*em_do_write)(TLS *s);
+    int         (*em_setup_key_block)(TLS *);
+    int         (*em_change_cipher_state)(TLS *, int);
+    int         (*em_do_write)(TLS *);
     /* Handshake header length */
     size_t      em_hhlen;
     uint32_t    em_enc_flags;
@@ -435,8 +437,8 @@ struct tls_method_t {
     int                     (*md_num_ciphers) (void);
     const TLS_CIPHER        *(*md_get_cipher) (unsigned ncipher);
     long                    (*md_get_timeout)(void);
-    const TLS_ENC_METHOD    *md_tls_enc; /* Extra TLS stuff */
     int                     (*md_tls_version) (void);
+    const TLS_ENC_METHOD    *md_tls_enc; /* Extra TLS stuff */
 };
 
 #define TLS_USE_ENC_FLAG(s, flag)  \
