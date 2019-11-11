@@ -214,18 +214,7 @@ tls1_2_get_cipher(uint32_t u)
 static const TLS_CIPHER *
 tls1_2_search_cipher_byid(uint32_t id)
 {
-    const TLS_CIPHER    *cipher = NULL;
-    int                 i = 0;
-
-    for (i = 0; i < TLS1_2_NUM_CIPHERS; i++) {
-        cipher = &tls1_2_ciphers[i];
-        if (cipher->cp_id == id) {
-            return cipher;
-        }
-    }
-
-    FC_LOG("find cipher failed\n");
-    return NULL;
+    return tls_search_cipher_byid(tls1_2_ciphers, TLS1_2_NUM_CIPHERS, id);
 }
 
 const TLS_CIPHER *
@@ -235,17 +224,6 @@ tls1_2_get_cipher_by_char(const uint8_t *p)
 
     id = 0x03000000 | FC_NTOHS(*((uint16_t *)p));
     return tls1_2_search_cipher_byid(id);
-}
-
-int 
-tls1_2_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len)
-{
-    if (!WPACKET_put_bytes_u16(pkt, c->cp_id & 0xffff)) {
-        return 0;
-    }
-
-    *len = sizeof(uint16_t);
-    return 1;
 }
 
 

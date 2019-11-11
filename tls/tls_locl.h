@@ -532,7 +532,8 @@ typedef struct {
 } version_info;
 
 #define IMPLEMENT_tls_meth_func(version, flags, mask, func_name, s_accept, \
-                                 s_connect, enc_data) \
+                                 s_connect, num_ciphers, get_cipher, \
+                                 get_cipher_by_char, enc_data) \
     const TLS_METHOD *func_name(void)  \
     { \
         static const TLS_METHOD func_name##_data= { \
@@ -544,12 +545,12 @@ typedef struct {
             .md_tls_new = tls1_2_new, \
             .md_tls_clear = tls1_2_clear, \
             .md_tls_free = tls1_2_free, \
-            .md_num_ciphers = tls1_2_num_ciphers, \
-            .md_get_cipher = tls1_2_get_cipher, \
+            .md_num_ciphers = num_ciphers, \
+            .md_get_cipher = get_cipher, \
             .md_tls_write_bytes = tls_write_bytes, \
             .md_tls_read_bytes = tls1_2_read_bytes, \
-            .md_get_cipher_by_char = tls1_2_get_cipher_by_char, \
-            .md_put_cipher_by_char = tls1_2_put_cipher_by_char, \
+            .md_get_cipher_by_char = get_cipher_by_char, \
+            .md_put_cipher_by_char = tls_put_cipher_by_char, \
             .md_tls_enc = enc_data, \
         }; \
         return &func_name##_data; \
@@ -587,6 +588,9 @@ long tls_get_algorithm(TLS *s);
 const FC_EVP_MD *tls_md(int idx);
 const FC_EVP_MD *tls_handshake_md(TLS *s);
 const FC_EVP_MD *tls_prf_md(TLS *s);
+const TLS_CIPHER *tls_search_cipher_byid(const TLS_CIPHER *ciphers,
+        size_t num, uint32_t id);
+int tls_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len);
 int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
         const unsigned char *prevsecret,
         const unsigned char *insecret,

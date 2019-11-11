@@ -98,4 +98,19 @@ tls1_3_get_cipher(uint32_t u)
     return (&(tls1_3_ciphers[TLS1_3_NUM_CIPHERS - 1 - u]));
 }
 
+static const TLS_CIPHER *
+tls1_3_search_cipher_byid(uint32_t id)
+{
+    return tls_search_cipher_byid(tls1_3_ciphers, TLS1_3_NUM_CIPHERS, id);
+}
+
+const TLS_CIPHER *
+tls1_3_get_cipher_by_char(const uint8_t *p)
+{
+    uint32_t    id = 0;
+
+    id = 0x03000000 | FC_NTOHS(*((uint16_t *)p));
+    return tls1_3_search_cipher_byid(id);
+}
+
 
