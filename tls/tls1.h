@@ -50,6 +50,19 @@
 #define TLS_RT_APPLICATION_DATA         23
 #define DTLS_RT_HEARTBEAT               24
 
+/* These are used when changing over to a new cipher */
+#define TLS_CC_READ            0x001
+#define TLS_CC_WRITE           0x002
+#define TLS_CC_CLIENT          0x010
+#define TLS_CC_SERVER          0x020
+#define TLS_CC_EARLY           0x040
+#define TLS_CC_HANDSHAKE       0x080
+#define TLS_CC_APPLICATION     0x100
+#define TLS_CHANGE_CIPHER_CLIENT_WRITE (TLS_CC_CLIENT|TLS_CC_WRITE)
+#define TLS_CHANGE_CIPHER_SERVER_READ  (TLS_CC_SERVER|TLS_CC_READ)
+#define TLS_CHANGE_CIPHER_CLIENT_READ  (TLS_CC_CLIENT|TLS_CC_READ)
+#define TLS_CHANGE_CIPHER_SERVER_WRITE (TLS_CC_SERVER|TLS_CC_WRITE)
+
 int tls_handshake_write(TLS *s);
 int tls_set_handshake_header(TLS *s, WPACKET *pkt, int htype);
 

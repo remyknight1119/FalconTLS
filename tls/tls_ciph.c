@@ -59,4 +59,13 @@ tls_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len)
     return 1;
 }
 
+int
+tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
+        const FC_EVP_MD **md, int *mac_pkey_type,
+        size_t *mac_secret_size, int use_etm)
+{
+    const TLS_CIPHER    *c = NULL;
+    int                 i = 0;
+
+}
 

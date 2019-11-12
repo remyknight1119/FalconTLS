@@ -275,6 +275,8 @@ typedef struct tls_state_t {
     const SIGALG_LOOKUP     *st_peer_sigalg;
     uint16_t                *st_peer_sigalgs;
     uint16_t                *st_peer_cert_sigalgs;
+    const FC_EVP_CIPHER     *st_new_sym_enc;
+    const FC_EVP_MD         *st_new_hash;
     FC_EVP_PKEY             *st_pkey;
     FC_EVP_PKEY             *st_peer_tmp;
     size_t                  st_peer_sigalgslen;
@@ -282,19 +284,14 @@ typedef struct tls_state_t {
     uint32_t                st_valid_flags[TLS_PKEY_NUM];
     TLS_RANDOM              st_client_random;
     TLS_RANDOM              st_server_random;
-#if 0
-    union                   {
-        struct {
-        } st_tls1_2;
-    };
-#endif
 } TLS_STATE;
 
 struct tls_session_t {
-    FC_X509     *se_peer;
+    FC_X509             *se_peer;
+    const TLS_CIPHER    *se_cipher;
     struct {
-        size_t      ecpointformats_len;
-        uint8_t     *ecpointformats; /* peer's list */
+        size_t          ecpointformats_len;
+        uint8_t         *ecpointformats; /* peer's list */
     } se_ext;
 };
 
@@ -600,5 +597,9 @@ int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
         unsigned char *outsecret);
 int tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
         size_t insecretlen);
+int tls13_setup_key_block(TLS *s);
+int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
+        const FC_EVP_MD **md, int *mac_pkey_type,
+        size_t *mac_secret_size, int use_etm);
 
 #endif

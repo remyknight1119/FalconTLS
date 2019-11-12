@@ -6,6 +6,7 @@
 #include "statem.h"
 #include "statem_locl.h"
 #include "tls_locl.h"
+#include "tls1.h"
 #include "cipher.h"
 #include "handshake.h"
 
@@ -775,8 +776,8 @@ tls_process_server_hello(TLS *s, PACKET *pkt)
         goto err;
     }
 
-    if ((!s->method->md_tls_enc->em_setup_key_block(s)
-                || !s->method->md_tls_enc->em_change_cipher_state(s,
+    if (TLS_IS_TLS13(s) &&(!s->tls_method->md_tls_enc->em_setup_key_block(s)
+                || !s->tls_method->md_tls_enc->em_change_cipher_state(s,
                     TLS_CC_HANDSHAKE | TLS_CHANGE_CIPHER_CLIENT_READ))) {
         FC_LOG("setup key block failed\n");
         goto err;

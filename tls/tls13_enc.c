@@ -93,12 +93,34 @@ int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
  * handshake secret. This requires the early secret to already have been
  * generated. Returns 1 on success  0 on failure.
  */
-int tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
+int
+tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
         size_t insecretlen)
 {
     /* Calls SSLfatal() if required */
     return tls13_generate_secret(s, tls_handshake_md(s), s->tls_early_secret,
             insecret, insecretlen,
             (unsigned char *)&s->tls_handshake_secret);
+}
+
+/*
+* There isn't really a key block in TLSv1.3, but we still need this function
+* for initialising the cipher and hash. Returns 1 on success or 0 on failure.
+*/
+int
+tls13_setup_key_block(TLS *s)
+{
+    const FC_EVP_CIPHER     *c = NULL;
+    const FC_EVP_MD         *hash = NULL;
+
+    s->tls_session->se_cipher = s->tls_cipher;
+    if (!tls_cipher_get_evp(s->tls_session, &c, &hash, NULL, NULL, 0)) {
+        return 0;
+    }
+
+    s->tls_state.st_new_sym_enc = c;
+    s->tls_state.st_new_hash = hash;
+
+    return 1;
 }
 
