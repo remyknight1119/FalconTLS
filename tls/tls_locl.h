@@ -171,7 +171,7 @@
         && (s)->tls_method->md_version != FC_TLS_ANY_VERSION)
 
 /*
- * When adding new digest in the ssl_ciph.c and increment SSL_MD_NUM_IDX make
+ * When adding new digest in the tls_ciph.c and increment TLS_MD_NUM_IDX make
  * sure to update this constant too
  */
 enum {

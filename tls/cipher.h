@@ -139,11 +139,17 @@
 #define TLS_AES                 (TLS_AES128|TLS_AES256|TLS_AESGCM|TLS_AESCCM)
 #define TLS_CHACHA20            (TLS_CHACHA20POLY1305)
 
-/* Bits for algorithm_mac (symmetric authentication) */
-#define TLS_SHA256              0x0000001U
-#define TLS_SHA384              0x0000002U
+#define TLS_MD5                 0x00000001U
+#define TLS_SHA1                0x00000002U
+#define TLS_GOST94              0x00000004U
+#define TLS_GOST89MAC           0x00000008U
+#define TLS_SHA256              0x00000010U
+#define TLS_SHA384              0x00000020U
 /* Not a real MAC, just an indication it is part of cipher */
-#define TLS_AEAD                0x0000004U
+#define TLS_AEAD                0x00000040U
+#define TLS_GOST12_256          0x00000080U
+#define TLS_GOST89MAC12         0x00000100U
+#define TLS_GOST12_512          0x00000200U
 
 
 FC_STACK_OF(TLS_CIPHER) *tls_create_cipher_list(const TLS_METHOD *method,

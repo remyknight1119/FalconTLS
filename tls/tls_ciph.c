@@ -65,6 +65,60 @@ static const tls_cipher_table tls_cipher_table_cipher[TLS_ENC_NUM_IDX] = {
     }, /* TLS_ENC_CHACHA_IDX 8 */
 };
 
+#define TLS_MD_NUM_IDX  TLS_MAX_DIGEST
+
+/* NB: make sure indices in this table matches values above */
+static const tls_cipher_table tls_cipher_table_mac[TLS_MD_NUM_IDX] = {
+    {
+        .ct_mask = TLS_MD5,
+        .ct_nid = NID_md5,
+    },         /* TLS_MD_MD5_IDX 0 */
+    {
+        .ct_mask = TLS_SHA1,
+        .ct_nid = NID_sha1,
+    },       /* TLS_MD_SHA1_IDX 1 */
+    {
+        .ct_mask = TLS_GOST94,
+        .ct_nid = NID_id_GostR3411_94,
+    }, /* TLS_MD_GOST94_IDX 2 */
+    {
+        .ct_mask = TLS_GOST89MAC,
+        .ct_nid = NID_id_Gost28147_89_MAC,
+    }, /* TLS_MD_GOST89MAC_IDX 3 */
+    {
+        .ct_mask = TLS_SHA256,
+        .ct_nid = NID_sha256,
+    },   /* TLS_MD_SHA256_IDX 4 */
+    {
+        .ct_mask = TLS_SHA384,
+        .ct_nid = NID_sha384,
+    },   /* TLS_MD_SHA384_IDX 5 */
+    {
+        .ct_mask = TLS_GOST12_256,
+        .ct_nid = NID_id_GostR3411_2012_256,
+    }, /* TLS_MD_GOST12_256_IDX 6 */
+    {
+        .ct_mask = TLS_GOST89MAC12,
+        .ct_nid = NID_gost_mac_12,
+    }, /* TLS_MD_GOST89MAC12_IDX 7 */
+    {
+        .ct_mask = TLS_GOST12_512,
+        .ct_nid = NID_id_GostR3411_2012_512,
+    }, /* TLS_MD_GOST12_512_IDX 8 */
+    {
+        .ct_mask = 0,
+        .ct_nid = NID_md5_sha1,
+    },          /* TLS_MD_MD5_SHA1_IDX 9 */
+    {
+        .ct_mask = 0,
+        .ct_nid = NID_sha224,
+    },            /* TLS_MD_SHA224_IDX 10 */
+    {
+        .ct_mask = 0,
+        .ct_nid = NID_sha512,
+    },             /* TLS_MD_SHA512_IDX 11 */
+};
+
 static int
 tls_cipher_info_find(const tls_cipher_table *table,size_t table_cnt,
                         uint32_t mask)
