@@ -598,6 +598,7 @@ int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
 int tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
         size_t insecretlen);
 int tls13_setup_key_block(TLS *s);
+int tls13_change_cipher_state(TLS *s, int which);
 int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         const FC_EVP_MD **md, int *mac_pkey_type,
         size_t *mac_secret_size, int use_etm);

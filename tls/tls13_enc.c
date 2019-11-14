@@ -124,3 +124,8 @@ tls13_setup_key_block(TLS *s)
     return 1;
 }
 
+int
+tls13_change_cipher_state(TLS *s, int which)
+{
+    return 1;
+}
