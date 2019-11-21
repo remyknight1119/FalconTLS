@@ -590,6 +590,7 @@ const FC_EVP_MD *tls_prf_md(TLS *s);
 const TLS_CIPHER *tls_search_cipher_byid(const TLS_CIPHER *ciphers,
         size_t num, uint32_t id);
 int tls_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len);
+int tls_load_ciphers(void);
 int tls13_generate_secret(TLS *s, const FC_EVP_MD *md,
         const unsigned char *prevsecret,
         const unsigned char *insecret,

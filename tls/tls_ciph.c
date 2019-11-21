@@ -5,119 +5,91 @@
 #include "tls_locl.h"
 #include "cipher.h"
 
-#define TLS_ENC_AES128_IDX      0
-#define TLS_ENC_AES256_IDX      1
-#define TLS_ENC_AES128GCM_IDX   2
-#define TLS_ENC_AES256GCM_IDX   3
-#define TLS_ENC_AES128CCM_IDX   4
-#define TLS_ENC_AES256CCM_IDX   5
-#define TLS_ENC_AES128CCM8_IDX  6
-#define TLS_ENC_AES256CCM8_IDX  7
-#define TLS_ENC_CHACHA_IDX      8
-#define TLS_ENC_NUM_IDX         9
-
-#define TLS_MD_NUM_IDX  TLS_MAX_DIGEST
-
 typedef struct {
-    uint32_t    ct_mask;
-    int         ct_nid;
+    const uint32_t              ct_mask;
+    const int                   ct_nid;
+    union {
+        const FC_EVP_CIPHER     *ct_cipher;
+        struct {
+            const FC_EVP_MD     *ct_md;
+            int                 ct_secret_size;
+        };
+    };
 } tls_cipher_table;
 
-static const FC_EVP_MD *tls_digest_methods[TLS_MD_NUM_IDX];
-
-/* Table of NIDs for each cipher */
-static const tls_cipher_table tls_cipher_table_cipher[TLS_ENC_NUM_IDX] = {
+static tls_cipher_table tls_cipher_table_cipher[] = {
     {
         .ct_mask = TLS_AES128,
         .ct_nid = NID_aes_128_cbc,
-    }, /* TLS_ENC_AES128_IDX 0 */
+    },
     {
         .ct_mask = TLS_AES256,
         .ct_nid = NID_aes_256_cbc,
-    }, /* TLS_ENC_AES256_IDX 1 */
+    },
     {
         .ct_mask = TLS_AES128GCM,
         .ct_nid = NID_aes_128_gcm,
-    }, /* TLS_ENC_AES128GCM_IDX 2 */
+    },
     {
         .ct_mask = TLS_AES256GCM,
         .ct_nid = NID_aes_256_gcm,
-    }, /* TLS_ENC_AES256GCM_IDX 3 */
+    },
     {
         .ct_mask = TLS_AES128CCM,
         .ct_nid = NID_aes_128_ccm,
-    }, /* TLS_ENC_AES128CCM_IDX 4 */
+    },
     {
         .ct_mask = TLS_AES256CCM,
         .ct_nid = NID_aes_256_ccm,
-    }, /* TLS_ENC_AES256CCM_IDX 5 */
+    },
     {
         .ct_mask = TLS_AES128CCM8,
         .ct_nid = NID_aes_128_ccm,
-    }, /* TLS_ENC_AES128CCM8_IDX 6 */
+    },
     {
         .ct_mask = TLS_AES256CCM8,
         .ct_nid = NID_aes_256_ccm
-    }, /* TLS_ENC_AES256CCM8_IDX 7 */
+    },
     {
         .ct_mask = TLS_CHACHA20POLY1305,
         .ct_nid = NID_chacha20_poly1305,
-    }, /* TLS_ENC_CHACHA_IDX 8 */
+    },
 };
 
-#define TLS_MD_NUM_IDX  TLS_MAX_DIGEST
+#define TLS_ENC_NUM_IDX     FC_ARRAY_SIZE(tls_cipher_table_cipher)
 
-/* NB: make sure indices in this table matches values above */
-static const tls_cipher_table tls_cipher_table_mac[TLS_MD_NUM_IDX] = {
+static tls_cipher_table tls_cipher_table_mac[] = {
     {
         .ct_mask = TLS_MD5,
         .ct_nid = NID_md5,
-    },         /* TLS_MD_MD5_IDX 0 */
+    },
     {
         .ct_mask = TLS_SHA1,
         .ct_nid = NID_sha1,
-    },       /* TLS_MD_SHA1_IDX 1 */
-    {
-        .ct_mask = TLS_GOST94,
-        .ct_nid = NID_id_GostR3411_94,
-    }, /* TLS_MD_GOST94_IDX 2 */
-    {
-        .ct_mask = TLS_GOST89MAC,
-        .ct_nid = NID_id_Gost28147_89_MAC,
-    }, /* TLS_MD_GOST89MAC_IDX 3 */
+    },
     {
         .ct_mask = TLS_SHA256,
         .ct_nid = NID_sha256,
-    },   /* TLS_MD_SHA256_IDX 4 */
+    },
     {
         .ct_mask = TLS_SHA384,
         .ct_nid = NID_sha384,
-    },   /* TLS_MD_SHA384_IDX 5 */
-    {
-        .ct_mask = TLS_GOST12_256,
-        .ct_nid = NID_id_GostR3411_2012_256,
-    }, /* TLS_MD_GOST12_256_IDX 6 */
-    {
-        .ct_mask = TLS_GOST89MAC12,
-        .ct_nid = NID_gost_mac_12,
-    }, /* TLS_MD_GOST89MAC12_IDX 7 */
-    {
-        .ct_mask = TLS_GOST12_512,
-        .ct_nid = NID_id_GostR3411_2012_512,
-    }, /* TLS_MD_GOST12_512_IDX 8 */
+    },
     {
         .ct_mask = 0,
         .ct_nid = NID_md5_sha1,
-    },          /* TLS_MD_MD5_SHA1_IDX 9 */
+    },
     {
         .ct_mask = 0,
         .ct_nid = NID_sha224,
-    },            /* TLS_MD_SHA224_IDX 10 */
+    },
     {
         .ct_mask = 0,
         .ct_nid = NID_sha512,
-    },             /* TLS_MD_SHA512_IDX 11 */
+    },
 };
+
+#define TLS_MD_NUM_IDX     FC_ARRAY_SIZE(tls_cipher_table_mac)
 
 static int
 tls_cipher_info_find(const tls_cipher_table *table,size_t table_cnt,
@@ -144,8 +116,8 @@ tls_md(int idx)
     if (idx < 0 || idx >= TLS_MD_NUM_IDX) {
         return NULL;
     }
-
-    return tls_digest_methods[idx];
+    
+    return tls_cipher_table_mac[idx].ct_md;
 }
 
 const FC_EVP_MD *
@@ -185,6 +157,24 @@ tls_put_cipher_by_char(const TLS_CIPHER *c, WPACKET *pkt, size_t *len)
     }
 
     *len = sizeof(uint16_t);
+    return 1;
+}
+
+int
+tls_load_ciphers(void)
+{
+    tls_cipher_table  *t = NULL;
+    size_t            i = 0;
+
+    for (i = 0, t = tls_cipher_table_cipher; i < TLS_ENC_NUM_IDX; i++, t++) {
+        t->ct_cipher = FC_EVP_get_cipherbynid(t->ct_nid);
+    }
+
+    for (i = 0, t = tls_cipher_table_mac; i < TLS_MD_NUM_IDX; i++, t++) {
+        t->ct_md = FC_EVP_get_digestbynid(t->ct_nid);
+        t->ct_secret_size = FC_EVP_MD_size(t->ct_md);
+    }
+
     return 1;
 }
 

@@ -300,6 +300,10 @@ FCTLS_init(void)
         return 0;
     }
 
+    if (!tls_load_ciphers()) {
+        return 0;
+    }
+
     return 1;
 }
 
