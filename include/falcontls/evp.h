@@ -108,5 +108,6 @@ extern int FC_EVP_PKEY_derive_set_peer(FC_EVP_PKEY_CTX *ctx, FC_EVP_PKEY *peer);
 extern int FC_EVP_PKEY_derive(FC_EVP_PKEY_CTX *ctx, unsigned char *key, size_t *pkeylen);
 extern const FC_EVP_CIPHER *FC_EVP_get_cipherbynid(int nid);
 extern const FC_EVP_MD *FC_EVP_get_digestbynid(int nid);
+extern int FC_EVP_MD_size(const FC_EVP_MD *md);
 
 #endif

@@ -12,6 +12,7 @@ typedef struct {
         const FC_EVP_CIPHER     *ct_cipher;
         struct {
             const FC_EVP_MD     *ct_md;
+            int                 ct_pkey_type;
             int                 ct_secret_size;
         };
     };
@@ -62,36 +63,43 @@ static tls_cipher_table tls_cipher_table_mac[] = {
     {
         .ct_mask = TLS_MD5,
         .ct_nid = NID_md5,
+        .ct_pkey_type = FC_EVP_PKEY_HMAC,
     },
     {
         .ct_mask = TLS_SHA1,
         .ct_nid = NID_sha1,
+        .ct_pkey_type = FC_EVP_PKEY_HMAC,
     },
     {
         .ct_mask = TLS_SHA256,
         .ct_nid = NID_sha256,
+        .ct_pkey_type = FC_EVP_PKEY_HMAC,
     },
     {
         .ct_mask = TLS_SHA384,
         .ct_nid = NID_sha384,
+        .ct_pkey_type = FC_EVP_PKEY_HMAC,
     },
     {
         .ct_mask = 0,
         .ct_nid = NID_md5_sha1,
+        .ct_pkey_type = EVP_PKEY_NONE,
     },
     {
         .ct_mask = 0,
         .ct_nid = NID_sha224,
+        .ct_pkey_type = EVP_PKEY_NONE,
     },
     {
         .ct_mask = 0,
         .ct_nid = NID_sha512,
+        .ct_pkey_type = EVP_PKEY_NONE,
     },
 };
 
 #define TLS_MD_NUM_IDX     FC_ARRAY_SIZE(tls_cipher_table_mac)
 
-static int
+static const tls_cipher_table *
 tls_cipher_info_find(const tls_cipher_table *table,size_t table_cnt,
                         uint32_t mask)
 {
@@ -99,11 +107,11 @@ tls_cipher_info_find(const tls_cipher_table *table,size_t table_cnt,
 
     for (i = 0; i < table_cnt; i++, table++) { 
         if (table->ct_mask == mask) {
-            return (int)i;
+            return table;
         }
     }
 
-    return -1;
+    return NULL;
 }
 
 #define tls_cipher_info_lookup(table, x) \
@@ -183,8 +191,9 @@ tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         const FC_EVP_MD **md, int *mac_pkey_type,
         size_t *mac_secret_size, int use_etm)
 {
-    const TLS_CIPHER    *c = NULL;
-    int                 i = 0;
+    const tls_cipher_table  *ct = NULL;
+    const tls_cipher_table  *mt = NULL;
+    const TLS_CIPHER        *c = NULL;
 
     c = s->se_cipher;
     if (c == NULL) {
@@ -196,15 +205,29 @@ tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         return 0;
     }
 
-    i = tls_cipher_info_lookup(tls_cipher_table_cipher, c->cp_algorithm_enc);
-    if (i == -1) {
+    ct = tls_cipher_info_lookup(tls_cipher_table_cipher, c->cp_algorithm_enc);
+    if (ct == NULL) {
         *enc = NULL;
         return 0;
     }
 
-    i = tls_cipher_info_lookup(tls_cipher_table_mac, c->cp_algorithm_mac);
-    if (i == -1) {
+    *enc = ct->ct_cipher;
+
+    mt = tls_cipher_info_lookup(tls_cipher_table_mac, c->cp_algorithm_mac);
+    if (mt == NULL) {
         return 0;
     }
+
+    *md = mt->ct_md;
+    *mac_pkey_type = mt->ct_pkey_type;
+    if (mac_secret_size != NULL) {
+        *mac_secret_size = mt->ct_secret_size;
+    }
+
+    if (*enc == NULL || *md == NULL) {
+        return 0;
+    }
+
+    return 1;
 }
 
