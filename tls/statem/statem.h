@@ -119,6 +119,22 @@ typedef enum {
     WRITE_STATE_POST_WORK
 } WRITE_STATE;
 
+typedef enum {
+    /* The enc_write_ctx can be used normally */
+    ENC_WRITE_STATE_VALID,
+    /* The enc_write_ctx cannot be used */
+    ENC_WRITE_STATE_INVALID,
+    /* Write alerts in plaintext, but otherwise use the enc_write_ctx */
+    ENC_WRITE_STATE_WRITE_PLAIN_ALERTS
+} ENC_WRITE_STATES;
+
+typedef enum {
+    /* The enc_read_ctx can be used normally */
+    ENC_READ_STATE_VALID,
+    /* We may receive encrypted or plaintext alerts */
+    ENC_READ_STATE_ALLOW_PLAIN_ALERTS
+} ENC_READ_STATES;
+
 typedef int (*construct_message_f)(TLS *s, WPACKET *pkt);
 typedef MSG_PROCESS_RETURN (*process_message_f)(TLS *s, PACKET *pkt);
 
@@ -149,6 +165,8 @@ typedef struct tls_statem_t {
     TLS_HANDSHAKE_STATE sm_hand_state;
     bool                sm_in_init;
     int                 sm_in_handshake;
+    ENC_WRITE_STATES    sm_enc_write_state;
+    ENC_READ_STATES     sm_enc_read_state;
 } TLS_STATEM;
 
 typedef struct tls_read_statem_t {

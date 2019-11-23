@@ -309,11 +309,15 @@ typedef struct tls_cert_t {
     void        *ct_sec_ex;
 } CERT;
 
+typedef struct tls_enc_t {
+    unsigned char           ec_iv[FC_EVP_MAX_IV_LENGTH];
+    FC_EVP_CIPHER_CTX       *ec_ctx;
+    EVP_MD_CTX              *ec_hash;
+} TLS_ENC;
+
 struct tls_t {
     TLS_STATEM                  tls_statem;
     bool                        tls_server;
-    unsigned char               tls_early_secret[FC_EVP_MAX_MD_SIZE];
-    unsigned char               tls_handshake_secret[FC_EVP_MAX_MD_SIZE];
     const TLS_METHOD            *tls_method;
     TLS_CTX                     *tls_ctx;
     FC_BIO                      *tls_rbio;
@@ -335,6 +339,20 @@ struct tls_t {
     TLS_STATE                   tls_state;
     FC_EVP_PKEY                 *tls_peer_key;
     TLS_SESSION                 *tls_session;
+    unsigned char               tls_early_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_handshake_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_master_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_resumption_master_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_client_finished_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_server_finished_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_server_finished_hash[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_handshake_traffic_hash[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_client_app_traffic_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_server_app_traffic_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_exporter_master_secret[FC_EVP_MAX_MD_SIZE];
+    unsigned char               tls_early_exporter_master_secret[FC_EVP_MAX_MD_SIZE];
+    TLS_ENC                     tls_enc_read;
+    TLS_ENC                     tls_enc_write;
     uint32_t                    tls_max_send_fragment;
     enum {TLS_HRR_NONE = 0, TLS_HRR_PENDING, TLS_HRR_COMPLETE}
                                 tls_hello_retry_request;

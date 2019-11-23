@@ -124,8 +124,91 @@ tls13_setup_key_block(TLS *s)
     return 1;
 }
 
+static const unsigned char client_early_traffic[] = "c e traffic";
+static const unsigned char client_handshake_traffic[] = "c hs traffic";
+static const unsigned char client_application_traffic[] = "c ap traffic";
+static const unsigned char server_handshake_traffic[] = "s hs traffic";
+static const unsigned char server_application_traffic[] = "s ap traffic";
+
 int
 tls13_change_cipher_state(TLS *s, int which)
 {
-    return 1;
+    TLS_ENC             *enc = NULL;
+    const unsigned char *label = NULL;
+    unsigned char       *hash = NULL;
+    unsigned char       *insecret = NULL;
+    unsigned char       *finsecret = NULL;
+    unsigned char       hashval[FC_EVP_MAX_MD_SIZE] = {};
+    size_t              finsecretlen = 0;
+    size_t              labellen = 0;
+    size_t              hashlen = 0;
+    int                 ret = 0;
+
+    hash = hashval;
+    if (which & TLS_CC_READ) {
+        enc = &s->tls_enc_read;
+    } else {
+        enc = &s->tls_enc_write;
+        s->tls_statem.sm_enc_write_state = ENC_WRITE_STATE_INVALID;
+    }
+
+    if (enc->ec_ctx != NULL) {
+        FC_EVP_CIPHER_CTX_reset(enc->ec_ctx);
+    } else {
+        enc->ec_ctx = FC_EVP_CIPHER_CTX_new();
+        if (enc->ec_ctx == NULL) {
+            goto err;
+        }
+    }
+
+    if (((which & TLS_CC_CLIENT) && (which & TLS_CC_WRITE)) ||
+            ((which & TLS_CC_SERVER) && (which & TLS_CC_READ))) {
+        if (which & TLS_CC_HANDSHAKE) {
+            insecret = s->tls_handshake_secret;
+            finsecret = s->tls_client_finished_secret;
+            finsecretlen = FC_EVP_MD_size(tls_handshake_md(s));
+            label = client_handshake_traffic;
+            labellen = sizeof(client_handshake_traffic) - 1;
+            hash = s->tls_handshake_traffic_hash;
+        } else {
+            insecret = s->tls_master_secret;
+            label = client_application_traffic;
+            labellen = sizeof(client_application_traffic) - 1;
+            hash = s->tls_server_finished_hash;
+        }
+    } else {
+        if (which & TLS_CC_HANDSHAKE) {
+            insecret = s->tls_handshake_secret;
+            finsecret = s->tls_server_finished_secret;
+            finsecretlen = FC_EVP_MD_size(tls_handshake_md(s));
+            label = server_handshake_traffic;
+            labellen = sizeof(server_handshake_traffic) - 1;
+        } else {
+            insecret = s->tls_master_secret;
+            label = server_application_traffic;
+            labellen = sizeof(server_application_traffic) - 1;
+        }
+    }
+
+    /*
+     * Save the hash of handshakes up to now for use when we calculate the
+     * client application traffic secret
+     */
+    if (label == server_application_traffic) {
+        memcpy(s->tls_server_finished_hash, hashval, hashlen);
+    }
+
+    if (label == server_handshake_traffic) {
+        memcpy(s->tls_handshake_traffic_hash, hashval, hashlen);
+    }
+
+    if (!s->tls_server && label == client_early_traffic) {
+        s->tls_statem.sm_enc_write_state = ENC_WRITE_STATE_WRITE_PLAIN_ALERTS;
+    } else {
+        s->tls_statem.sm_enc_write_state = ENC_WRITE_STATE_VALID;
+    }
+
+    ret = 1;
+err:
+    return ret;
 }
