@@ -134,6 +134,8 @@ int
 tls13_change_cipher_state(TLS *s, int which)
 {
     TLS_ENC             *enc = NULL;
+    const FC_EVP_MD     *md = NULL;
+    const FC_EVP_CIPHER *cipher = NULL;
     const unsigned char *label = NULL;
     unsigned char       *hash = NULL;
     unsigned char       *insecret = NULL;
@@ -187,6 +189,15 @@ tls13_change_cipher_state(TLS *s, int which)
             insecret = s->tls_master_secret;
             label = server_application_traffic;
             labellen = sizeof(server_application_traffic) - 1;
+        }
+    }
+
+    if (!(which & TLS_CC_EARLY)) {
+        md = tls_handshake_md(s);
+        cipher = s->tls_state.st_new_sym_enc;
+        if (!tls_digest_cached_records(s, 1) ||
+                !tls_handshake_hash(s, hashval, sizeof(hashval), &hashlen)) {
+            goto err;
         }
     }
 

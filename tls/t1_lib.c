@@ -679,3 +679,33 @@ tls_get_algorithm(TLS *s)
     return alg;
 }
 
+int
+tls_handshake_hash(TLS *s, unsigned char *out, size_t outlen,
+        size_t *hashlen)
+{
+    FC_EVP_MD_CTX       *ctx = NULL;
+    FC_EVP_MD_CTX       *hdgst = s->tls_state.st_handshake_dgst;
+    int                 hashleni = FC_EVP_MD_CTX_size(hdgst);
+    int                 ret = 0;
+
+    if (hashleni < 0 || (size_t)hashleni > outlen) {
+        goto err;
+    }
+
+    ctx = FC_EVP_MD_CTX_new();
+    if (ctx == NULL)
+        goto err;
+
+    if (!FC_EVP_MD_CTX_copy_ex(ctx, hdgst)
+            || FC_EVP_DigestFinal_ex(ctx, out, NULL) <= 0) {
+        goto err;
+    }
+
+    *hashlen = hashleni;
+
+    ret = 1;
+err:
+    FC_EVP_MD_CTX_free(ctx);
+    return ret;
+}
+

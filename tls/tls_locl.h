@@ -279,6 +279,8 @@ typedef struct tls_state_t {
     const FC_EVP_MD         *st_new_hash;
     FC_EVP_PKEY             *st_pkey;
     FC_EVP_PKEY             *st_peer_tmp;
+    FC_BIO                  *st_handshake_buffer;
+    FC_EVP_MD_CTX           *st_handshake_dgst;
     size_t                  st_peer_sigalgslen;
     size_t                  st_peer_cert_sigalgslen;
     uint32_t                st_valid_flags[TLS_PKEY_NUM];
@@ -621,5 +623,8 @@ int tls13_change_cipher_state(TLS *s, int which);
 int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         const FC_EVP_MD **md, int *mac_pkey_type,
         size_t *mac_secret_size, int use_etm);
+int tls_digest_cached_records(TLS *s, int keep);
+int tls_handshake_hash(TLS *s, unsigned char *out, size_t outlen,
+        size_t *hashlen);
 
 #endif

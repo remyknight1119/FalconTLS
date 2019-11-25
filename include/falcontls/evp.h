@@ -109,5 +109,15 @@ extern int FC_EVP_PKEY_derive(FC_EVP_PKEY_CTX *ctx, unsigned char *key, size_t *
 extern const FC_EVP_CIPHER *FC_EVP_get_cipherbynid(int nid);
 extern const FC_EVP_MD *FC_EVP_get_digestbynid(int nid);
 extern int FC_EVP_MD_size(const FC_EVP_MD *md);
+extern FC_EVP_MD_CTX *FC_EVP_MD_CTX_new(void);
+extern void FC_EVP_MD_CTX_free(FC_EVP_MD_CTX *ctx);
+extern int FC_EVP_MD_CTX_copy_ex(FC_EVP_MD_CTX *out, const FC_EVP_MD_CTX *in);
+extern int FC_EVP_DigestFinal_ex(FC_EVP_MD_CTX *ctx, unsigned char *md,
+            unsigned int *size);
+extern FC_EVP_CIPHER_CTX *FC_EVP_CIPHER_CTX_new(void);
+extern int FC_EVP_CIPHER_CTX_reset(FC_EVP_CIPHER_CTX *c);
+extern void FC_EVP_CIPHER_CTX_free(FC_EVP_CIPHER_CTX *ctx);
+extern int FC_EVP_CipherInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
+            const unsigned char *key, const unsigned char *iv, int enc);
 
 #endif
