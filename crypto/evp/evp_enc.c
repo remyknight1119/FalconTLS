@@ -29,3 +29,18 @@ FC_EVP_CipherInit(FC_EVP_CIPHER_CTX *ctx, const FC_EVP_CIPHER *cipher,
     return EVP_CipherInit((EVP_CIPHER_CTX *)ctx, (const EVP_CIPHER *)cipher,
             key, iv, enc);
 }
+
+int
+FC_EVP_CipherInit_ex(FC_EVP_CIPHER_CTX *ctx, const FC_EVP_CIPHER *cipher,
+        FC_ENGINE *impl, const unsigned char *key,
+        const unsigned char *iv, int enc)
+{
+    return EVP_CipherInit_ex((EVP_CIPHER_CTX *)ctx, (const EVP_CIPHER *)cipher,
+            (ENGINE *)impl, key, iv, enc);
+}
+
+int
+FC_EVP_CIPHER_CTX_ctrl(FC_EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+{
+    return EVP_CIPHER_CTX_ctrl((EVP_CIPHER_CTX *)ctx, type, arg, ptr);
+}

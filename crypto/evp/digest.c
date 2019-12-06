@@ -28,3 +28,16 @@ FC_EVP_DigestFinal_ex(FC_EVP_MD_CTX *ctx, unsigned char *md, unsigned int *size)
 {
     return EVP_DigestFinal_ex((EVP_MD_CTX *)ctx, md, size);
 }
+
+int
+FC_EVP_DigestInit_ex(FC_EVP_MD_CTX *ctx, const FC_EVP_MD *type, FC_ENGINE *impl)
+{
+    return EVP_DigestInit_ex((EVP_MD_CTX *)ctx, (const EVP_MD *)type,
+                    (ENGINE *)impl);
+}
+
+int
+FC_EVP_DigestUpdate(FC_EVP_MD_CTX *ctx, const void *data, size_t count)
+{
+    return EVP_DigestUpdate((EVP_MD_CTX *)ctx, data, count);
+}

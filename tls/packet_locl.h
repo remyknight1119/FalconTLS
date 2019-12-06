@@ -332,6 +332,8 @@ typedef struct wpacket_t {
     /* The buffer where we store the output data */
     FC_BUF_MEM      *wk_buf;
 
+    /* Fixed sized buffer which can be used as an alternative to buf */
+    unsigned char   *wk_staticbuf;
     /*
      * Offset into the buffer where we are currently writing. We use an offset
      * in case the buffer grows and gets reallocated.
@@ -410,5 +412,8 @@ int WPACKET_sub_memcpy(WPACKET *pkt, const void *src, size_t len,
 #define WPACKET_sub_memcpy_u32(pkt, src, len) \
     WPACKET_sub_memcpy((pkt), (src), (len), 4)
 
+int WPACKET_init_static_len(WPACKET *pkt, unsigned char *buf, size_t len,
+                size_t lenbytes);
+int WPACKET_get_total_written(WPACKET *pkt, size_t *written);
 
 #endif

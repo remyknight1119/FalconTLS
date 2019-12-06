@@ -693,7 +693,7 @@ set_client_ciphersuite(TLS *s, const unsigned char *cipherchars)
         return 0;
     }
 
-    s->tls_cipher = c;
+    s->tls_state.st_new_cipher = c;
 
     return 1;
 }
@@ -899,7 +899,7 @@ tls_process_ske_ecdhe(TLS *s, PACKET *pkt, FC_EVP_PKEY **pkey)
         return 0;
     }
 
-    alg_auth = s->tls_cipher->cp_algorithm_auth;
+    alg_auth = s->tls_state.st_new_cipher->cp_algorithm_auth;
     /*
      * The ECC/TLS specification does not mention the use of DSA to sign
      * ECParameters in the server key exchange message. We do support RSA
@@ -931,7 +931,7 @@ tls1_2_process_key_exchange(TLS *s, PACKET *pkt)
 
     FC_LOG("in\n");
     save_param_start = *pkt;
-    alg_k = s->tls_cipher->cp_algorithm_mkey;
+    alg_k = s->tls_state.st_new_cipher->cp_algorithm_mkey;
     proc = tls_stream_get_process_key_exchange(alg_k,
             tls12_client_process_key_exchange, 
             tls12_client_process_key_exchange_num);

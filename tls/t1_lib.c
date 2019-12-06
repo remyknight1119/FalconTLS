@@ -661,16 +661,16 @@ tls_get_algorithm(TLS *s)
 {
     long    alg = 0;
 
-    if (s->tls_cipher == NULL) {
+    if (s->tls_state.st_new_cipher == NULL) {
         FC_LOG("cipher is NULL\n");
         return -1;
     }
-    alg = s->tls_cipher->cp_algorithm;
+    alg = s->tls_state.st_new_cipher->cp_algorithm;
     if (s->tls_method->md_tls_enc->em_enc_flags & TLS_ENC_FLAG_SHA256_PRF) {
         if (alg == (TLS_HANDSHAKE_MAC_DEFAULT | TLS1_PRF)) {
             return TLS_HANDSHAKE_MAC_SHA256 | TLS1_PRF_SHA256;
         }
-    } else if (s->tls_cipher->cp_algorithm_mkey & TLS_PSK) {
+    } else if (s->tls_state.st_new_cipher->cp_algorithm_mkey & TLS_PSK) {
         if (alg == (TLS_HANDSHAKE_MAC_SHA384 | TLS1_PRF_SHA384)) {
             return TLS_HANDSHAKE_MAC_DEFAULT | TLS1_PRF;
         }

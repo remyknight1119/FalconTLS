@@ -48,6 +48,18 @@
 #define FC_EVP_PKEY_OP_DECRYPT             (1<<9)
 #define FC_EVP_PKEY_OP_DERIVE              (1<<10)
 
+#define FC_EVP_CIPH_STREAM_CIPHER          0x0
+#define FC_EVP_CIPH_ECB_MODE               0x1
+#define FC_EVP_CIPH_CBC_MODE               0x2
+#define FC_EVP_CIPH_CFB_MODE               0x3
+#define FC_EVP_CIPH_OFB_MODE               0x4
+#define FC_EVP_CIPH_CTR_MODE               0x5
+#define FC_EVP_CIPH_GCM_MODE               0x6
+#define FC_EVP_CIPH_CCM_MODE               0x7
+#define FC_EVP_CIPH_XTS_MODE               0x10001
+#define FC_EVP_CIPH_WRAP_MODE              0x10002
+#define FC_EVP_CIPH_OCB_MODE               0x10003
+#define FC_EVP_CIPH_MODE                   0xF0007
 
 /*
  * Cipher handles any and all padding logic as well as finalisation.
@@ -57,6 +69,29 @@
 #define FC_EVP_CIPH_FLAG_TLS1_1_MULTIBLOCK  0x400000
 /* Cipher can handle pipeline operations */
 #define FC_EVP_CIPH_FLAG_PIPELINE           0X800000
+
+/* GCM TLS constants */
+/* Length of fixed part of IV derived from PRF */
+#define FC_EVP_GCM_TLS_FIXED_IV_LEN                        4
+/* Length of explicit part of IV part of TLS records */
+#define FC_EVP_GCM_TLS_EXPLICIT_IV_LEN                     8
+/* Length of tag for TLS */
+#define FC_EVP_GCM_TLS_TAG_LEN                             16
+
+/* CCM TLS constants */
+/* Length of fixed part of IV derived from PRF */
+#define FC_EVP_CCM_TLS_FIXED_IV_LEN                        4
+/* Length of explicit part of IV part of TLS records */
+#define FC_EVP_CCM_TLS_EXPLICIT_IV_LEN                     8
+/* Total length of CCM IV length for TLS */
+#define FC_EVP_CCM_TLS_IV_LEN                              12
+/* Length of tag for TLS */
+#define FC_EVP_CCM_TLS_TAG_LEN                             16
+/* Length of CCM8 tag for TLS */
+#define FC_EVP_CCM8_TLS_TAG_LEN                            8
+
+/* Length of tag for TLS */
+#define FC_EVP_CHACHAPOLY_TLS_TAG_LEN                      16
 
 
 enum {
@@ -86,6 +121,10 @@ extern int FC_EVP_PKEY_missing_parameters(const FC_EVP_PKEY *pkey);
 extern ulong FC_EVP_CIPHER_flags(const FC_EVP_CIPHER *cipher);
 extern const FC_EVP_MD *FC_EVP_MD_CTX_md(const FC_EVP_MD_CTX *ctx);
 extern int FC_EVP_MD_size(const FC_EVP_MD *md);
+extern int FC_EVP_CIPHER_key_length(const FC_EVP_CIPHER *cipher);
+extern unsigned long FC_EVP_CIPHER_flags(const FC_EVP_CIPHER *cipher);
+#define FC_EVP_CIPHER_mode(e)   (FC_EVP_CIPHER_flags(e) & FC_EVP_CIPH_MODE)
+
 extern int FC_EVP_PKEY_assign(FC_EVP_PKEY *pkey, int type, void *key);
 extern FC_EVP_PKEY_CTX *FC_EVP_PKEY_CTX_new_id(int id, FC_ENGINE *e);
 extern int FC_EVP_PKEY_paramgen_init(FC_EVP_PKEY_CTX *ctx);
@@ -119,5 +158,16 @@ extern int FC_EVP_CIPHER_CTX_reset(FC_EVP_CIPHER_CTX *c);
 extern void FC_EVP_CIPHER_CTX_free(FC_EVP_CIPHER_CTX *ctx);
 extern int FC_EVP_CipherInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
             const unsigned char *key, const unsigned char *iv, int enc);
+extern int FC_EVP_DigestInit_ex(FC_EVP_MD_CTX *ctx, const FC_EVP_MD *type,
+            FC_ENGINE *impl);
+extern int FC_EVP_DigestUpdate(FC_EVP_MD_CTX *ctx, const void *data,
+            size_t count);
+extern int FC_EVP_CIPHER_iv_length(const FC_EVP_CIPHER *cipher);
+extern int FC_EVP_CipherInit_ex(FC_EVP_CIPHER_CTX *ctx, const FC_EVP_CIPHER *cipher,
+            FC_ENGINE *impl, const unsigned char *key,
+            const unsigned char *iv, int enc);
+extern int FC_EVP_CIPHER_CTX_ctrl(FC_EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
+
+
 
 #endif

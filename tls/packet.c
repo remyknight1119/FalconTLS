@@ -65,13 +65,25 @@ wpacket_intern_init_len(WPACKET *pkt, size_t lenbytes)
     return 1;
 }
 
+int
+WPACKET_init_static_len(WPACKET *pkt, unsigned char *buf, size_t len,
+        size_t lenbytes)
+{
+    size_t max = lenbytes;
+
+    pkt->wk_staticbuf = buf;
+    pkt->wk_buf = NULL;
+    pkt->wk_maxsize = (max < len) ? max : len;
+
+    return wpacket_intern_init_len(pkt, lenbytes);
+}
 
 int
 WPACKET_init_len(WPACKET *pkt, FC_BUF_MEM *buf, size_t lenbytes)
 {
     assert(buf != NULL);
 
-   // pkt->staticbuf = NULL;
+    pkt->wk_staticbuf = NULL;
     pkt->wk_buf = buf;
     pkt->wk_maxsize = lenbytes;
 
@@ -234,6 +246,13 @@ WPACKET_close(WPACKET *pkt)
     }
 
     return wpacket_intern_close(pkt, pkt->wk_subs, 1);
+}
+
+int
+WPACKET_get_total_written(WPACKET *pkt, size_t *written)
+{
+    *written = pkt->wk_written;
+    return 1;
 }
 
 int

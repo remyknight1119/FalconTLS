@@ -275,6 +275,7 @@ typedef struct tls_state_t {
     const SIGALG_LOOKUP     *st_peer_sigalg;
     uint16_t                *st_peer_sigalgs;
     uint16_t                *st_peer_cert_sigalgs;
+    const TLS_CIPHER        *st_new_cipher;
     const FC_EVP_CIPHER     *st_new_sym_enc;
     const FC_EVP_MD         *st_new_hash;
     FC_EVP_PKEY             *st_pkey;
@@ -327,7 +328,6 @@ struct tls_t {
     FC_BUF_MEM                  *tls_init_buf;
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list;
     FC_STACK_OF(TLS_CIPHER)     *tls_cipher_list_by_id;
-    const TLS_CIPHER            *tls_cipher;
     CERT                        *tls_cert;
     int                         (*tls_handshake_func)(TLS *);
     int                         tls_version;
