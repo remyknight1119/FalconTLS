@@ -61,6 +61,33 @@
 #define FC_EVP_CIPH_OCB_MODE               0x10003
 #define FC_EVP_CIPH_MODE                   0xF0007
 
+#define FC_EVP_PKEY_ALG_CTRL               0x1000
+
+#define         EVP_CTRL_INIT                   0x0
+#define         FC_EVP_CTRL_SET_KEY_LENGTH         0x1
+#define         FC_EVP_CTRL_GET_RC2_KEY_BITS       0x2
+#define         FC_EVP_CTRL_SET_RC2_KEY_BITS       0x3
+#define         FC_EVP_CTRL_GET_RC5_ROUNDS         0x4
+#define         FC_EVP_CTRL_SET_RC5_ROUNDS         0x5
+#define         FC_EVP_CTRL_RAND_KEY               0x6
+#define         FC_EVP_CTRL_PBE_PRF_NID            0x7
+#define         FC_EVP_CTRL_COPY                   0x8
+#define         FC_EVP_CTRL_AEAD_SET_IVLEN         0x9
+#define         FC_EVP_CTRL_AEAD_GET_TAG           0x10
+#define         FC_EVP_CTRL_AEAD_SET_TAG           0x11
+#define         FC_EVP_CTRL_AEAD_SET_IV_FIXED      0x12
+#define         FC_EVP_CTRL_GCM_SET_IVLEN          FC_EVP_CTRL_AEAD_SET_IVLEN
+#define         FC_EVP_CTRL_GCM_GET_TAG            FC_EVP_CTRL_AEAD_GET_TAG
+#define         FC_EVP_CTRL_GCM_SET_TAG            FC_EVP_CTRL_AEAD_SET_TAG
+#define         FC_EVP_CTRL_GCM_SET_IV_FIXED       FC_EVP_CTRL_AEAD_SET_IV_FIXED
+#define         FC_EVP_CTRL_GCM_IV_GEN             0x13
+#define         FC_EVP_CTRL_CCM_SET_IVLEN          FC_EVP_CTRL_AEAD_SET_IVLEN
+#define         FC_EVP_CTRL_CCM_GET_TAG            FC_EVP_CTRL_AEAD_GET_TAG
+#define         FC_EVP_CTRL_CCM_SET_TAG            FC_EVP_CTRL_AEAD_SET_TAG
+#define         FC_EVP_CTRL_CCM_SET_IV_FIXED       FC_EVP_CTRL_AEAD_SET_IV_FIXED
+#define         FC_EVP_CTRL_CCM_SET_L              0x14
+#define         FC_EVP_CTRL_CCM_SET_MSGLEN         0x15
+
 /*
  * Cipher handles any and all padding logic as well as finalisation.
  */

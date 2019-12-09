@@ -292,4 +292,17 @@ err:
     return 0;
 }
 
+int
+tls_setup_handshake(TLS *s)
+{
+    if (!tls_init_finished_mac(s)) {
+        return 0;
+    }
+
+    memset(&s->tls_state.st_client_random, 0,
+            sizeof(s->tls_state.st_client_random));
+
+    return 1;
+}
+
 

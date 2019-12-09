@@ -148,5 +148,9 @@ extern TLS_SESSION *TLS_SESSION_new(void);
 extern void TLS_SESSION_free(TLS_SESSION *ss);
 extern void FCTLS_CTX_set_security_callback(TLS_CTX *ctx, TLS_SEC_CB cb);
 
+extern int TLS_in_init(const TLS *s);
+extern int TLS_is_init_finished(const TLS *s);
+extern int TLS_in_before(const TLS *s);
+
 
 #endif

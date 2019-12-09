@@ -211,6 +211,5 @@ int tls13_statem_accept(TLS *s);
 int tls13_statem_connect(TLS *s);
 int tls_get_message_header(TLS *s, int *mt);
 int tls_get_message_body(TLS *s, size_t *len);
-int TLS_in_init(TLS *s);
 
 #endif

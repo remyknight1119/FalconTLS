@@ -1,5 +1,7 @@
 #include <assert.h>
 
+#include <falcontls/kdf.h>
+
 #include "tls_locl.h"
 #include "tls1.h"
 #include "tls1_3.h"
@@ -7,6 +9,9 @@
 #include "cipher.h"
 
 #define TLS13_MAX_LABEL_LEN     249
+
+/* Always filled with zeros */
+static const unsigned char default_zeros[EVP_MAX_MD_SIZE];
 
 int
 tls13_hkdf_expand(TLS *s, const FC_EVP_MD *md, const unsigned char *secret,
@@ -89,6 +94,17 @@ tls13_derive_iv(TLS *s, const FC_EVP_MD *md, const unsigned char *secret,
 
     return tls13_hkdf_expand(s, md, secret, ivlabel, sizeof(ivlabel) - 1,
             NULL, 0, iv, ivlen, 1);
+}
+
+int
+tls13_derive_finishedkey(TLS *s, const FC_EVP_MD *md,
+        const unsigned char *secret,
+        unsigned char *fin, size_t finlen)
+{
+    static const unsigned char finishedlabel[] = "finished";
+
+    return tls13_hkdf_expand(s, md, secret, finishedlabel,
+            sizeof(finishedlabel) - 1, NULL, 0, fin, finlen, 1);
 }
 
 /*
@@ -280,6 +296,7 @@ static const unsigned char client_application_traffic[] = "c ap traffic";
 static const unsigned char server_handshake_traffic[] = "s hs traffic";
 static const unsigned char server_application_traffic[] = "s ap traffic";
 static const unsigned char resumption_master_secret[] = "res master";
+static const unsigned char exporter_master_secret[] = "exp master";
 
 int
 tls13_change_cipher_state(TLS *s, int which)
@@ -292,6 +309,7 @@ tls13_change_cipher_state(TLS *s, int which)
     unsigned char       *insecret = NULL;
     unsigned char       *finsecret = NULL;
     unsigned char       hashval[FC_EVP_MAX_MD_SIZE] = {};
+    unsigned char       secret[FC_EVP_MAX_MD_SIZE] = {};
     size_t              finsecretlen = 0;
     size_t              labellen = 0;
     size_t              hashlen = 0;
@@ -377,6 +395,23 @@ tls13_change_cipher_state(TLS *s, int which)
     if (!derive_secret_key_and_iv(s, which & TLS_CC_WRITE, md, cipher,
                 insecret, hash, label, labellen, secret, enc->ec_iv,
                 enc->ec_ctx)) {
+        goto err;
+    }
+
+    if (label == server_application_traffic) {
+        memcpy(s->tls_server_app_traffic_secret, secret, hashlen);
+        if (!tls13_hkdf_expand(s, tls_handshake_md(s), insecret,
+                    exporter_master_secret,
+                    sizeof(exporter_master_secret) - 1,
+                    hash, hashlen, s->tls_exporter_master_secret,
+                    hashlen, 1)) {
+            goto err;
+        }
+    }
+
+    if (finsecret != NULL
+            && !tls13_derive_finishedkey(s, tls_handshake_md(s), secret,
+                finsecret, finsecretlen)) {
         goto err;
     }
 

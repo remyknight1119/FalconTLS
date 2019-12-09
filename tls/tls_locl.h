@@ -626,5 +626,8 @@ int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
 int tls_digest_cached_records(TLS *s, int keep);
 int tls_handshake_hash(TLS *s, unsigned char *out, size_t outlen,
         size_t *hashlen);
+int tls_init_finished_mac(TLS *s);
+int tls_setup_handshake(TLS *s);
+TLS_HANDSHAKE_STATE TLS_get_state(const TLS *s);
 
 #endif

@@ -18,6 +18,8 @@
 
 #define FC_ARRAY_SIZE(array)    (sizeof(array)/sizeof(array[0]))
 
+#define FC_BZERO(m) memset((m), 0, sizeof(m))
+
 #define FC_HTONS(a)     htons(a)
 #define FC_HTONL(a)     htonl(a)
 #define FC_NTOHS(a)     ntohs(a)
