@@ -67,7 +67,7 @@ mem_puts(FC_BIO *bi, const char *str)
 }
 
 static long
-mem_ctrl(FC_BIO *bi, int cmd, long mem, void *ptr)
+mem_ctrl(FC_BIO *bi, int cmd, long num, void *ptr)
 {
     BIO_BUF_MEM *bbm = (BIO_BUF_MEM *)bi->b_ptr;
     FC_BUF_MEM  *bm = NULL;
@@ -83,6 +83,9 @@ mem_ctrl(FC_BIO *bi, int cmd, long mem, void *ptr)
                 pptr = (char **)ptr;
                 *pptr = (char *)&(bm->bm_data[0]);
             }
+            break;
+        case FC_BIO_CTRL_SET_CLOSE:
+            bi->b_shutdown = (int)num;
             break;
         default:
             ret = 0;

@@ -103,6 +103,7 @@ enum {
 #define FC_BIO_set_fp(b,fp,c)  FC_BIO_ctrl(b,FC_BIO_C_SET_FILE_PTR,c,(char *)fp)
 #define FC_BIO_get_fp(b,fpp)   FC_BIO_ctrl(b,FC_BIO_C_GET_FILE_PTR,0,(char *)fpp)
 #define FC_BIO_get_mem_data(b,pp)  FC_BIO_ctrl(b,FC_BIO_CTRL_INFO,0,(char *)(pp))
+#define FC_BIO_set_close(b,c)      (int)FC_BIO_ctrl(b,FC_BIO_CTRL_SET_CLOSE,(c),NULL)
 
 extern FC_BIO *FC_BIO_new(const FC_BIO_METHOD *method);
 extern int FC_BIO_free(FC_BIO *a);

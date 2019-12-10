@@ -13,7 +13,7 @@ FC_EVP_CIPHER_CTX_reset(FC_EVP_CIPHER_CTX *c)
 FC_EVP_CIPHER_CTX *
 FC_EVP_CIPHER_CTX_new(void)
 {
-    return (EVP_CIPHER_CTX *)EVP_CIPHER_CTX_new();
+    return (FC_EVP_CIPHER_CTX *)EVP_CIPHER_CTX_new();
 }
 
 void

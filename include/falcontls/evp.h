@@ -183,7 +183,7 @@ extern int FC_EVP_DigestFinal_ex(FC_EVP_MD_CTX *ctx, unsigned char *md,
 extern FC_EVP_CIPHER_CTX *FC_EVP_CIPHER_CTX_new(void);
 extern int FC_EVP_CIPHER_CTX_reset(FC_EVP_CIPHER_CTX *c);
 extern void FC_EVP_CIPHER_CTX_free(FC_EVP_CIPHER_CTX *ctx);
-extern int FC_EVP_CipherInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
+extern int FC_EVP_CipherInit(FC_EVP_CIPHER_CTX *ctx, const FC_EVP_CIPHER *cipher,
             const unsigned char *key, const unsigned char *iv, int enc);
 extern int FC_EVP_DigestInit_ex(FC_EVP_MD_CTX *ctx, const FC_EVP_MD *type,
             FC_ENGINE *impl);
