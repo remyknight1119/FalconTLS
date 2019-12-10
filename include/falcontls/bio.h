@@ -88,8 +88,16 @@ enum {
 #define FC_BIO_WRITE            0x04
 #define FC_BIO_APPEND           0x08
 
-#define FC_BIO_TYPE_FILE        1
-#define FC_BIO_TYPE_SOCKET      2
+/* There are the classes of BIOs */
+#define FC_BIO_TYPE_DESCRIPTOR     0x0100 /* socket, fd, connect or accept */
+#define FC_BIO_TYPE_FILTER         0x0200
+#define FC_BIO_TYPE_SOURCE_SINK    0x0400
+
+#define FC_BIO_TYPE_NONE             0
+#define FC_BIO_TYPE_MEM            ( 1|FC_BIO_TYPE_SOURCE_SINK)
+#define FC_BIO_TYPE_FILE           ( 2|FC_BIO_TYPE_SOURCE_SINK)
+#define FC_BIO_TYPE_FD             ( 4|FC_BIO_TYPE_SOURCE_SINK|FC_BIO_TYPE_DESCRIPTOR)
+#define FC_BIO_TYPE_SOCKET         ( 5|FC_BIO_TYPE_SOURCE_SINK|FC_BIO_TYPE_DESCRIPTOR)
 
 
 #define FC_BIO_set_fp(b,fp,c)  FC_BIO_ctrl(b,FC_BIO_C_SET_FILE_PTR,c,(char *)fp)
@@ -115,5 +123,6 @@ extern const FC_BIO_METHOD *FC_BIO_s_file(void);
 extern FC_BIO *FC_BIO_new_file(const char *filename, const char *mode);
 extern const FC_BIO_METHOD *FC_BIO_s_socket(void);
 extern int FC_BIO_set_fd(FC_BIO *b, int fd, int flags);
+extern const FC_BIO_METHOD *FC_BIO_s_mem(void);
 
 #endif
