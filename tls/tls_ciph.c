@@ -18,6 +18,12 @@ typedef struct {
     };
 } tls_cipher_table;
 
+typedef struct {
+    char        *cem_cipher_name;
+    uint64_t    cem_algorithm_enc;
+    uint64_t    cem_algorithm_mac;
+} tls_cipher_enc_md;
+
 static tls_cipher_table tls_cipher_table_cipher[] = {
     {
         .ct_mask = TLS_AES128,
@@ -98,6 +104,32 @@ static tls_cipher_table tls_cipher_table_mac[] = {
 };
 
 #define TLS_MD_NUM_IDX     FC_ARRAY_SIZE(tls_cipher_table_mac)
+
+
+static tls_cipher_enc_md cipher_enc_md[] = {
+    {
+        .cem_cipher_name = "AES-128-CBC-HMAC-SHA1",
+        .cem_algorithm_enc = TLS_AES128,
+        .cem_algorithm_mac = TLS_SHA1,
+    },
+    {
+        .cem_cipher_name = "AES-256-CBC-HMAC-SHA1",
+        .cem_algorithm_enc = TLS_AES256,
+        .cem_algorithm_mac = TLS_SHA1,
+    },
+    {
+        .cem_cipher_name = "AES-128-CBC-HMAC-SHA256",
+        .cem_algorithm_enc = TLS_AES128,
+        .cem_algorithm_mac = TLS_SHA256,
+    },
+    {
+        .cem_cipher_name = "AES-256-CBC-HMAC-SHA256",
+        .cem_algorithm_enc = TLS_AES256,
+        .cem_algorithm_mac = TLS_SHA256,
+    },
+};
+
+#define TLS_CIPHER_ENC_MD_NUM       FC_ARRAY_SIZE(cipher_enc_md)
 
 static const tls_cipher_table *
 tls_cipher_info_find(const tls_cipher_table *table,size_t table_cnt,
@@ -193,7 +225,9 @@ tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
 {
     const tls_cipher_table  *ct = NULL;
     const tls_cipher_table  *mt = NULL;
+    const FC_EVP_CIPHER     *evp = NULL;
     const TLS_CIPHER        *c = NULL;
+    int                     i = 0;
 
     c = s->se_cipher;
     if (c == NULL) {
@@ -202,12 +236,14 @@ tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
     }
 
     if ((enc == NULL) || (md == NULL)) {
+        FC_LOG("Error: enc = %p, md = %p\n", enc, md);
         return 0;
     }
 
     ct = tls_cipher_info_lookup(tls_cipher_table_cipher, c->cp_algorithm_enc);
     if (ct == NULL) {
         *enc = NULL;
+        FC_LOG("Error: cipher info lookup failed!\n");
         return 0;
     }
 
@@ -215,19 +251,51 @@ tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
 
     mt = tls_cipher_info_lookup(tls_cipher_table_mac, c->cp_algorithm_mac);
     if (mt == NULL) {
-        return 0;
+        *md = NULL;
+        if (mac_pkey_type != NULL) {
+            *mac_pkey_type = NID_undef;
+        }
+        if (mac_secret_size != NULL) {
+            *mac_secret_size = 0;
+        }
+        if (c->cp_algorithm_mac == TLS_AEAD) {
+            mac_pkey_type = NULL;
+        }
+    } else {
+        *md = mt->ct_md;
+        *mac_pkey_type = mt->ct_pkey_type;
+        if (mac_secret_size != NULL) {
+            *mac_secret_size = mt->ct_secret_size;
+        }
     }
 
-    *md = mt->ct_md;
-    *mac_pkey_type = mt->ct_pkey_type;
-    if (mac_secret_size != NULL) {
-        *mac_secret_size = mt->ct_secret_size;
+    if ((*enc != NULL) &&
+            (*md != NULL || FC_EVP_CIPHER_flags(*enc) & FC_EVP_CIPH_FLAG_AEAD_CIPHER)
+            && (!mac_pkey_type || *mac_pkey_type != NID_undef)) {
+
+        if (use_etm) {
+            FC_LOG("Use etm\n");
+            return 1;
+        }
+
+        for (i = 0; i < TLS_CIPHER_ENC_MD_NUM; i++) {
+        FC_LOG("enc = [%lu:%lu], mac = [%lu:%lu], i = %d\n", c->cp_algorithm_enc,
+                cipher_enc_md[i].cem_algorithm_enc, c->cp_algorithm_mac,
+                cipher_enc_md[i].cem_algorithm_mac, i);
+            if (c->cp_algorithm_enc == cipher_enc_md[i].cem_algorithm_enc &&
+                c->cp_algorithm_mac == cipher_enc_md[i].cem_algorithm_mac &&
+                (evp = FC_EVP_get_cipherbyname(cipher_enc_md[i].cem_cipher_name))) {
+                *enc = evp, *md = NULL;
+                FC_LOG("Match cipher %s\n", cipher_enc_md[i].cem_cipher_name);
+                break;
+            }
+        }
+
+        FC_LOG("*enc = %p, *md = %p, i = %d\n", *enc, *md, i);
+        return 1;
     }
 
-    if (*enc == NULL || *md == NULL) {
-        return 0;
-    }
-
-    return 1;
+    FC_LOG("Error: *enc = %p, *md = %p\n", *enc, *md);
+    return 0;
 }
 

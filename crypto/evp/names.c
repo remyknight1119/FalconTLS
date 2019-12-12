@@ -16,3 +16,8 @@ FC_EVP_get_digestbynid(int nid)
     return (FC_EVP_MD *)EVP_get_digestbynid(nid);
 }
 
+const FC_EVP_CIPHER *
+FC_EVP_get_cipherbyname(const char *name)
+{
+    return (const FC_EVP_CIPHER *)EVP_get_cipherbyname(name);
+}
