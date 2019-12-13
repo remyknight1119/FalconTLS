@@ -44,12 +44,6 @@
 #define TLSEXT_ECPOINTFORMAT_ansiX962_compressed_char2  2
 #define TLSEXT_ECPOINTFORMAT_last                       2
 
-#define TLS_RT_CHANGE_CIPHER_SPEC       20
-#define TLS_RT_ALERT                    21
-#define TLS_RT_HANDSHAKE                22
-#define TLS_RT_APPLICATION_DATA         23
-#define DTLS_RT_HEARTBEAT               24
-
 /* These are used when changing over to a new cipher */
 #define TLS_CC_READ            0x001
 #define TLS_CC_WRITE           0x002

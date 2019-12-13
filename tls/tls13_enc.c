@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include <falcontls/kdf.h>
+#include <fc_log.h>
 
 #include "tls_locl.h"
 #include "tls1.h"
@@ -328,6 +329,7 @@ tls13_change_cipher_state(TLS *s, int which)
     } else {
         enc->ec_ctx = FC_EVP_CIPHER_CTX_new();
         if (enc->ec_ctx == NULL) {
+            FC_LOG("New EVP_CIPHER_CTX failed\n");
             goto err;
         }
     }
@@ -366,6 +368,7 @@ tls13_change_cipher_state(TLS *s, int which)
         cipher = s->tls_state.st_new_sym_enc;
         if (!tls_digest_cached_records(s, 1) ||
                 !tls_handshake_hash(s, hashval, sizeof(hashval), &hashlen)) {
+            FC_LOG("Digest or handshake hash failed\n");
             goto err;
         }
     }
@@ -388,6 +391,7 @@ tls13_change_cipher_state(TLS *s, int which)
                     sizeof(resumption_master_secret) - 1,
                     hashval, hashlen, s->tls_resumption_master_secret,
                     hashlen, 1)) {
+            FC_LOG("hkdf expand failed\n");
             goto err;
         }
     }
@@ -395,6 +399,7 @@ tls13_change_cipher_state(TLS *s, int which)
     if (!derive_secret_key_and_iv(s, which & TLS_CC_WRITE, md, cipher,
                 insecret, hash, label, labellen, secret, enc->ec_iv,
                 enc->ec_ctx)) {
+        FC_LOG("Derive secret key and iv failed\n");
         goto err;
     }
 
@@ -405,6 +410,7 @@ tls13_change_cipher_state(TLS *s, int which)
                     sizeof(exporter_master_secret) - 1,
                     hash, hashlen, s->tls_exporter_master_secret,
                     hashlen, 1)) {
+            FC_LOG("hkdf expand failed\n");
             goto err;
         }
     }
@@ -412,6 +418,7 @@ tls13_change_cipher_state(TLS *s, int which)
     if (finsecret != NULL
             && !tls13_derive_finishedkey(s, tls_handshake_md(s), secret,
                 finsecret, finsecretlen)) {
+        FC_LOG("Derive finished key failed\n");
         goto err;
     }
 

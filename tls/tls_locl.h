@@ -23,6 +23,8 @@
 #define TLS_RT_ALERT                        21
 #define TLS_RT_HANDSHAKE                    22
 #define TLS_RT_APPLICATION_DATA             23
+#define DTLS_RT_HEARTBEAT                   24
+
 
 #define TLS_CIPHER_LEN                  2
 
@@ -624,6 +626,7 @@ int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         const FC_EVP_MD **md, int *mac_pkey_type,
         size_t *mac_secret_size, int use_etm);
 int tls_digest_cached_records(TLS *s, int keep);
+int tls_finish_mac(TLS *s, const unsigned char *buf, size_t len);
 int tls_handshake_hash(TLS *s, unsigned char *out, size_t outlen,
         size_t *hashlen);
 int tls_init_finished_mac(TLS *s);

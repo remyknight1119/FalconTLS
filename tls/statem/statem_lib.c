@@ -47,6 +47,19 @@ tls_do_write(TLS *s, int type)
         return -1;
     }
 
+    if (type == TLS_RT_HANDSHAKE) {
+        if (!TLS_IS_TLS13(s) || (s->tls_statem.sm_hand_state != TLS_ST_SW_SESSION_TICKET
+                    && s->tls_statem.sm_hand_state != TLS_ST_CW_KEY_UPDATE
+                    && s->tls_statem.sm_hand_state != TLS_ST_SW_KEY_UPDATE)) {
+            if (!tls_finish_mac(s,
+                        (unsigned char *)&s->tls_init_buf->bm_data[s->tls_init_off],
+                        written)) {
+                FC_LOG("Err: finish mac\n");
+                return -1;
+            }
+        }
+    }
+
     if (written == s->tls_init_num) {
         return 1;
     }

@@ -88,6 +88,14 @@ enum {
 #define FC_BIO_WRITE            0x04
 #define FC_BIO_APPEND           0x08
 
+/*
+ * This is used with memory BIOs:
+ * BIO_FLAGS_MEM_RDONLY means we shouldn't free up or change the data in any way;
+ * BIO_FLAGS_NONCLEAR_RST means we shouldn't clear data on reset.
+ */
+#define FC_BIO_FLAGS_MEM_RDONLY    0x200
+#define FC_BIO_FLAGS_NONCLEAR_RST  0x400
+
 /* There are the classes of BIOs */
 #define FC_BIO_TYPE_DESCRIPTOR     0x0100 /* socket, fd, connect or accept */
 #define FC_BIO_TYPE_FILTER         0x0200
@@ -124,6 +132,7 @@ extern const FC_BIO_METHOD *FC_BIO_s_file(void);
 extern FC_BIO *FC_BIO_new_file(const char *filename, const char *mode);
 extern const FC_BIO_METHOD *FC_BIO_s_socket(void);
 extern int FC_BIO_set_fd(FC_BIO *b, int fd, int flags);
+extern FC_BIO *FC_BIO_new_mem_buf(const void *buf, int len);
 extern const FC_BIO_METHOD *FC_BIO_s_mem(void);
 
 #endif

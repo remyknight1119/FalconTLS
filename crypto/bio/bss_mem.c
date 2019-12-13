@@ -9,6 +9,7 @@
 #include <falcontls/crypto.h>
 #include <falcontls/bio.h>
 #include <falcontls/buffer.h>
+#include <fc_log.h>
 
 #include "internal/bio.h"
 #include "internal/buffer.h"
@@ -48,10 +49,80 @@ FC_BIO_s_mem(void)
     return &mem_method;   
 }
 
+FC_BIO *
+FC_BIO_new_mem_buf(const void *buf, int len)
+{
+    FC_BIO          *ret = NULL;
+    FC_BUF_MEM      *b = NULL;
+    BIO_BUF_MEM     *bb = NULL;
+    size_t          sz = 0;
+
+    if (buf == NULL) {
+        return NULL;
+    }
+
+    sz = (len < 0) ? strlen(buf) : (size_t)len;
+    if ((ret = FC_BIO_new(FC_BIO_s_mem())) == NULL) {
+        return NULL;
+    }
+    bb = (BIO_BUF_MEM *)ret->b_ptr;
+    b = bb->bm_buf;
+    /* Cast away const and trust in the MEM_RDONLY flag. */
+    b->bm_data = (void *)buf;
+    b->bm_length = sz;
+    b->bm_max = sz;
+    *bb->bm_readp = *bb->bm_buf;
+    ret->b_flags |= FC_BIO_FLAGS_MEM_RDONLY;
+    /* Since this is static data retrying won't help */
+    ret->b_num = 0;
+    return ret;
+}
+
+/*
+ * Reallocate memory buffer if read pointer differs
+ */
+static int
+mem_buf_sync(FC_BIO *b)
+{
+    if (b != NULL && b->b_init != 0 && b->b_ptr != NULL) {
+        BIO_BUF_MEM *bbm = (BIO_BUF_MEM *)b->b_ptr;
+
+        if (bbm->bm_readp->bm_data != bbm->bm_buf->bm_data) {
+            memmove(bbm->bm_buf->bm_data, bbm->bm_readp->bm_data, bbm->bm_readp->bm_length);
+            bbm->bm_buf->bm_length = bbm->bm_readp->bm_length;
+            bbm->bm_readp->bm_data = bbm->bm_buf->bm_data;
+        }
+    }
+    return 0;
+}
+
 static int
 mem_write(FC_BIO *bi, const char *buf, int num)
 {
-    return 1;
+    BIO_BUF_MEM *bbm = (BIO_BUF_MEM *)bi->b_ptr;
+    int         blen = 0;
+    int         ret = -1;
+
+    if (buf == NULL) {
+        goto end;
+    }
+
+    if (bi->b_flags & FC_BIO_FLAGS_MEM_RDONLY) {
+        FC_LOG("Err: MEM_RDONLY\n");
+        goto end;
+    }
+    blen = bbm->bm_readp->bm_length;
+    mem_buf_sync(bi);
+    if (FC_BUF_MEM_grow_clean(bbm->bm_buf, blen + num) == 0) {
+        FC_LOG("Err: BUF_MEM_grow_clean\n");
+        goto end;
+    }
+
+    memcpy(bbm->bm_buf->bm_data + blen, buf, num);
+    *bbm->bm_readp = *bbm->bm_buf;
+    ret = num;
+end:
+    return ret;
 }
 
 static int
