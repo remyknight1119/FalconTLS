@@ -349,8 +349,8 @@ typedef struct wpacket_t {
     WPACKET_SUB     *wk_subs;
 } WPACKET;
 
-#define WPKT_GETBUF(p)      (((p)->wk_staticbuf) != NULL) \
-                                    ? (p)->wk_staticbuf : (unsigned char *)GET_BUF_DATA((p)->wk_buf)
+#define WPKT_GETBUF(p)      (((p)->wk_staticbuf != NULL) \
+                                    ? (p)->wk_staticbuf : (unsigned char *)GET_BUF_DATA((p)->wk_buf))
 
 int WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t bytes);
 
