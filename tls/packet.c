@@ -60,7 +60,7 @@ wpacket_intern_init_len(WPACKET *pkt, size_t lenbytes)
         FC_LOG("WPACKET allocate error!\n");
         return 0;
     }
-    pkt->wk_subs->ws_packet_len = lenchars - WPKT_GETBUF(pkt);
+    pkt->wk_subs->ws_packet_len = (size_t)(lenchars - WPKT_GETBUF(pkt));
 
     return 1;
 }
@@ -131,7 +131,6 @@ WPACKET_put_bytes(WPACKET *pkt, unsigned int val, size_t size)
     assert(size <= sizeof(unsigned int));
     if (!WPACKET_allocate_bytes(pkt, size, &data)
             || !put_value(data, val, size)) {
-        FC_LOG("fail\n");
         return 0;
     }
 
@@ -197,11 +196,10 @@ WPACKET_start_sub_packet_len(WPACKET *pkt, size_t lenbytes)
     }
 
     if (!WPACKET_allocate_bytes(pkt, lenbytes, &lenchars)) {
-        FC_LOG("fail\n");
         return 0;
     }
     /* Convert to an offset in case the underlying BUF_MEM gets realloc'd */
-    sub->ws_packet_len = lenchars - WPKT_GETBUF(pkt);
+    sub->ws_packet_len = (size_t)(lenchars - WPKT_GETBUF(pkt));
 
     return 1;
 }

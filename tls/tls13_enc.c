@@ -287,7 +287,7 @@ derive_secret_key_and_iv(TLS *s, int sending, const FC_EVP_MD *md,
 
     return 1;
 err:
-    OPENSSL_cleanse(key, sizeof(key));
+    FALCONTLS_free(key);
     return 0;
 }
 
