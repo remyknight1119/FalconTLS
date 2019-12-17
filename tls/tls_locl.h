@@ -458,6 +458,8 @@ struct tls_method_t {
     long                    (*md_get_timeout)(void);
     int                     (*md_tls_version) (void);
     const TLS_ENC_METHOD    *md_tls_enc; /* Extra TLS stuff */
+    const TLS_READ_STATEM   *md_read_statem;
+    const TLS_WRITE_STATEM  *md_write_statem;
 };
 
 #define TLS_USE_ENC_FLAG(s, flag)  \
@@ -554,7 +556,8 @@ typedef struct {
 
 #define IMPLEMENT_tls_meth_func(version, flags, mask, func_name, s_accept, \
                                  s_connect, num_ciphers, get_cipher, \
-                                 get_cipher_by_char, enc_data) \
+                                 get_cipher_by_char, enc_data, \
+                                 read_statem, write_statem) \
     const TLS_METHOD *func_name(void)  \
     { \
         static const TLS_METHOD func_name##_data= { \
@@ -569,10 +572,12 @@ typedef struct {
             .md_num_ciphers = num_ciphers, \
             .md_get_cipher = get_cipher, \
             .md_tls_write_bytes = tls_write_bytes, \
-            .md_tls_read_bytes = tls1_2_read_bytes, \
+            .md_tls_read_bytes = tls_read_bytes, \
             .md_get_cipher_by_char = get_cipher_by_char, \
             .md_put_cipher_by_char = tls_put_cipher_by_char, \
             .md_tls_enc = enc_data, \
+            .md_read_statem = read_statem, \
+            .md_write_statem = write_statem, \
         }; \
         return &func_name##_data; \
     }

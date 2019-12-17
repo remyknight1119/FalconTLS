@@ -289,13 +289,15 @@ fctls13_statem_client_read_transition(TLS *s, int mt)
 {
     TLS_STATEM  *st = &s->tls_statem;
 
-    FC_LOG("mt = %d\n", mt);
+    FC_LOG("mt = %d, state = %d\n", mt, st->sm_hand_state);
     switch (st->sm_hand_state) {
         case TLS_ST_CW_CLNT_HELLO:
             if (mt == TLS_MT_SERVER_HELLO) {
                 st->sm_hand_state = TLS_ST_CR_SRVR_HELLO;
                 return 1;
             }
+            break;
+        case TLS_ST_CR_SRVR_HELLO:
             break;
         default:
             break;
@@ -321,6 +323,7 @@ fctls_statem_process_message(TLS *s, PACKET *pkt, TLS_PROCESS_MESSAGE *pm, size_
 static MSG_PROCESS_RETURN
 fctls_statem_client_process_message(TLS *s, PACKET *pkt)
 {
+    FC_LOG("in++++++++++++++++++++=\n");
     return fctls_statem_process_message(s, pkt, tls_client_process_message,
             tls_client_process_message_num);
 }
@@ -328,6 +331,7 @@ fctls_statem_client_process_message(TLS *s, PACKET *pkt)
 static MSG_PROCESS_RETURN
 fctls12_statem_client_process_message(TLS *s, PACKET *pkt)
 {
+    FC_LOG("in++++++++++++++++++++=\n");
     return fctls_statem_process_message(s, pkt, tls12_client_process_message,
             tls12_client_process_message_num);
 }
@@ -335,6 +339,7 @@ fctls12_statem_client_process_message(TLS *s, PACKET *pkt)
 static MSG_PROCESS_RETURN
 fctls13_statem_client_process_message(TLS *s, PACKET *pkt)
 {
+    FC_LOG("in++++++++++++++++++++=\n");
     return fctls_statem_process_message(s, pkt, tls13_client_process_message,
             tls13_client_process_message_num);
 }
@@ -386,6 +391,7 @@ fctls12_statem_client_write_transition(TLS *s)
     TLS_STATEM  *st = &s->tls_statem;
     TLS_STATE   *t = NULL;
 
+    FC_LOG("in\n");
     t = &s->tls_state;
     switch (st->sm_hand_state) {
         case TLS_ST_BEFORE:
@@ -411,6 +417,7 @@ fctls13_statem_client_write_transition(TLS *s)
 
     t = &s->tls_state;
 #endif
+    FC_LOG("in\n");
     switch (st->sm_hand_state) {
         case TLS_ST_BEFORE:
             st->sm_hand_state = TLS_ST_CW_CLNT_HELLO;

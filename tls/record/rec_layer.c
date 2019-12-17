@@ -94,8 +94,9 @@ tls_read_n(TLS *s, size_t n, size_t max, int extend, int clearold,
     len = RECORD_LAYER_get_packet_length(rlayer);
     pkt = rb->bf_buf + rb->bf_offset;
     while (left < n) {
-        FC_LOG("BIO read\n");
+        FC_LOG("BIO read(%ld)\n", max - left);
         ret = FC_BIO_read(s->tls_rbio, pkt + len + left, max - left);
+        FC_LOG("read %d\n", ret);
         if (ret >= 0) {
             bioread = ret;
         }
@@ -195,7 +196,7 @@ tls_get_record(TLS *s)
 }
 
 int
-tls1_2_read_bytes(TLS *s, int type, int *recvd_type, void *buf, size_t len,
+tls_read_bytes(TLS *s, int type, int *recvd_type, void *buf, size_t len,
         size_t *read_bytes)
 {
     TLS_RECORD      *rr = NULL;
@@ -237,7 +238,9 @@ start:
 
     rr = &rr[curr_rec];
 
-    if (type == TLS_RECORD_get_type(rr)) {
+    FC_LOG("type = %d, get = %d\n", type, TLS_RECORD_get_type(rr));
+    if (type == TLS_RECORD_get_type(rr) || (TLS_RECORD_get_type(rr) ==
+            TLS_RT_CHANGE_CIPHER_SPEC && type == TLS_RT_HANDSHAKE)) {
         if (recvd_type != NULL) {
             *recvd_type = TLS_RECORD_get_type(rr);
         }

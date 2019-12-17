@@ -81,15 +81,17 @@ init_write_state_machine(TLS *s)
 }
 
 static SUB_STATE_RETURN
-read_state_machine(TLS *s, TLS_READ_STATEM *read)
+read_state_machine(TLS *s)
 {
-    TLS_STATEM          *st = &s->tls_statem;
-    PACKET              pkt = {};
-    size_t              len = 0;
-    int                 mt = 0;
-    int                 ret = 0;
+    TLS_STATEM              *st = &s->tls_statem;
+    const TLS_READ_STATEM   *read = NULL;
+    PACKET                  pkt = {};
+    size_t                  len = 0;
+    int                     mt = 0;
+    int                     ret = 0;
 
     while (1) {
+        read = s->tls_method->md_read_statem;
         switch (st->sm_read_state) {
         case READ_STATE_HEADER:
             FC_LOG("header!\n");
@@ -114,6 +116,7 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
             }
 
             if (!PACKET_buf_init(&pkt, s->tls_init_msg, len)) {
+                FC_LOG("Buf init failed!\n");
                 return SUB_STATE_ERROR;
             }
             ret = read->rs_process_message(s, &pkt);
@@ -123,6 +126,7 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
 
             switch (ret) {
                 case MSG_PROCESS_ERROR:
+                    FC_LOG("Msg error!\n");
                     return SUB_STATE_ERROR;
 
                 case MSG_PROCESS_FINISHED_READING:
@@ -139,6 +143,7 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
             }
             break;
         case READ_STATE_POST_PROCESS:
+            FC_LOG("Post work!\n");
             st->sm_read_state_work = read->rs_post_process_message(s,
                     st->sm_read_state_work);
             switch (st->sm_read_state_work) {
@@ -155,21 +160,24 @@ read_state_machine(TLS *s, TLS_READ_STATEM *read)
             }
             break;
         default:
+            FC_LOG("Error!\n");
             return SUB_STATE_ERROR;
         }
     }
 }
 
 static SUB_STATE_RETURN
-write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
+write_state_machine(TLS *s)
 {
     TLS_STATEM              *st = &s->tls_statem;
+    const TLS_WRITE_STATEM  *write = NULL;
     construct_message_f     confunc = NULL;
     WPACKET                 pkt = {};
     int                     mt = 0;
     int                     ret = 0;
 
     while (1) {
+        write = s->tls_method->md_write_statem;
         switch (st->sm_write_state) {
             case WRITE_STATE_TRANSITION:
                 switch (write->ws_transition(s)) {
@@ -179,9 +187,11 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                         break;
 
                     case WRITE_TRAN_FINISHED:
+                        FC_LOG("State finished!\n");
                         return SUB_STATE_FINISHED;
 
                     case WRITE_TRAN_ERROR:
+                        FC_LOG("State error!\n");
                         return SUB_STATE_ERROR;
                 }
                 break;
@@ -192,6 +202,7 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                         /* Fall through */
                     case WORK_MORE_A:
                     case WORK_MORE_B:
+                        FC_LOG("State error!\n");
                         return SUB_STATE_ERROR;
 
                     case WORK_FINISHED_CONTINUE:
@@ -208,6 +219,7 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
                     return SUB_STATE_ERROR;
                 }
 
+                        FC_LOG("State in!\n");
                 if (WPACKET_init(&pkt, s->tls_init_buf) == 0 ||
                         tls_set_handshake_header(s, &pkt, mt) == 0) {
                     WPACKET_cleanup(&pkt);
@@ -254,14 +266,14 @@ write_state_machine(TLS *s, TLS_WRITE_STATEM *write)
 
                 break;
             default:
+                FC_LOG("State error!\n");
                 return SUB_STATE_ERROR;
         }
     }
 }
 
 static int
-tls_state_machine(TLS *s, int server, TLS_READ_STATEM *read,
-        TLS_WRITE_STATEM *write)
+tls_state_machine(TLS *s, int server)
 {
     TLS_STATEM  *st = &s->tls_statem;
     FC_BUF_MEM  *buf = NULL;
@@ -269,6 +281,7 @@ tls_state_machine(TLS *s, int server, TLS_READ_STATEM *read,
     int         ret = 0;
 
     st->sm_in_handshake++;
+    FC_LOG("statem = %d\n", st->sm_state);
     if (st->sm_state == MSG_FLOW_UNINITED || 
             st->sm_state == MSG_FLOW_RENEGOTIATE) {
         if (st->sm_state == MSG_FLOW_UNINITED) {
@@ -305,18 +318,19 @@ tls_state_machine(TLS *s, int server, TLS_READ_STATEM *read,
         init_write_state_machine(s);
     }
 
+    FC_LOG("in = %d\n", st->sm_state);
     while (st->sm_state != MSG_FLOW_FINISHED) {
         if (st->sm_state == MSG_FLOW_READING) {
-            ssret = read_state_machine(s, read);
+            ssret = read_state_machine(s);
             if (ssret == SUB_STATE_FINISHED) {
                 st->sm_state = MSG_FLOW_WRITING;
                 init_write_state_machine(s);
             } else {
-                FC_LOG("Read error!\n");
+                FC_LOG("Read error(%d)!\n", ssret);
                 goto end;
             }
         } else if (st->sm_state == MSG_FLOW_WRITING) {
-            ssret = write_state_machine(s, write);
+            ssret = write_state_machine(s);
             if (ssret == SUB_STATE_FINISHED) {
                 st->sm_state = MSG_FLOW_READING;
                 init_read_state_machine(s);
@@ -345,42 +359,36 @@ end:
 int
 tls_statem_accept(TLS *s)
 {
-    return tls_state_machine(s, 1, &tls_server_read_statem_proc,
-            &tls_server_write_statem_proc);
+    return tls_state_machine(s, 1);
 }
 
 int
 tls_statem_connect(TLS *s)
 {
-    return tls_state_machine(s, 0, &tls_client_read_statem_proc,
-            &tls_client_write_statem_proc);
+    return tls_state_machine(s, 0);
 }
 
 int
 tls12_statem_accept(TLS *s)
 {
-    return tls_state_machine(s, 1, &tls12_server_read_statem_proc,
-            &tls12_server_write_statem_proc);
+    return tls_state_machine(s, 1);
 }
 
 int
 tls12_statem_connect(TLS *s)
 {
-    return tls_state_machine(s, 0, &tls12_client_read_statem_proc,
-            &tls12_client_write_statem_proc);
+    return tls_state_machine(s, 0);
 }
 
 int
 tls13_statem_accept(TLS *s)
 {
-    return tls_state_machine(s, 1, &tls13_server_read_statem_proc,
-            &tls13_server_write_statem_proc);
+    return tls_state_machine(s, 1);
 }
 
 int
 tls13_statem_connect(TLS *s)
 {
-    return tls_state_machine(s, 0, &tls13_client_read_statem_proc,
-            &tls13_client_write_statem_proc);
+    return tls_state_machine(s, 0);
 }
 

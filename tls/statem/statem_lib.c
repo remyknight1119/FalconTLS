@@ -138,10 +138,13 @@ tls_get_message_header(TLS *s, int *mt)
                                           &readbytes);
             if (i <= 0) {
                 //s->tls_rwstate = SSL_READING;
+                FC_LOG("Error\n");
                 return 0;
             }
             if (recvd_type == TLS_RT_CHANGE_CIPHER_SPEC) {
+                FC_LOG("TLS_RT_CHANGE_CIPHER_SPEC\n");
             } else if (recvd_type != TLS_RT_HANDSHAKE) {
+                FC_LOG("Error, recvd_type = %d\n", recvd_type);
                 return 0;
             }
 

@@ -73,6 +73,7 @@ fctls12_statem_server_post_process_message(TLS *s, WORK_STATE wst)
 static WRITE_TRAN
 fctls12_statem_server_write_transition(TLS *s)
 {
+    FC_LOG("in\n");
     return WRITE_TRAN_FINISHED;
 }
 
@@ -116,6 +117,7 @@ fctls_statem_server_post_process_message(TLS *s, WORK_STATE wst)
 static WRITE_TRAN
 fctls_statem_server_write_transition(TLS *s)
 {
+    FC_LOG("in\n");
     return WRITE_TRAN_FINISHED;
 }
 
