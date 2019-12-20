@@ -129,6 +129,7 @@ tls_get_record(TLS *s)
     size_t          n = 0;
     unsigned int    type = 0;
     PACKET          pkt = {};
+    int             enc_err = 0;
     int             rret = 0;
 
     rlayer = &s->tls_rlayer;
@@ -172,6 +173,7 @@ tls_get_record(TLS *s)
         if (more > 0) {
             /* now s->packet_length == SSL3_RT_HEADER_LENGTH */
 
+            FC_LOG("more = %d\n", (int)more);
             rret = tls_read_n(s, more, more, 1, 0, &n);
             if (rret <= 0) {
                 return rret;     /* error or non-blocking io */
@@ -191,6 +193,20 @@ tls_get_record(TLS *s)
     } while (num_recs < max_recs && thisrr->rd_type == TLS_RT_APPLICATION_DATA);
 
     RECORD_LAYER_set_numrpipes(rlayer, num_recs);
+
+    if (num_recs == 1 && thisrr->rd_type == TLS_RT_CHANGE_CIPHER_SPEC
+            && TLS_IS_TLS13(s)) {
+        thisrr->rd_type = TLS_RT_HANDSHAKE;
+        thisrr->rd_read = 1;
+        RECORD_LAYER_set_numrpipes(&s->tls_rlayer, 1);
+        return 1;
+    }
+
+    FC_LOG("xxxxxxxxxxxxxxxxxxxxxxxenc = %p, version = %x\n", s->tls_method->md_tls_enc->em_enc, s->tls_method->md_version);
+    enc_err = s->tls_method->md_tls_enc->em_enc(s, rr, num_recs, 0);
+    if (enc_err == 0) {
+        return -1;
+    }
 
     return 1;
 }

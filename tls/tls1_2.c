@@ -11,13 +11,6 @@
 #include "handshake.h"
 #include "cipher.h"
 
-TLS_ENC_METHOD const TLSv1_2_enc_data = {
-    .em_set_handshake_header = tls_set_handshake_header,
-    .em_hhlen = TLS_HM_HEADER_LENGTH,
-    .em_do_write = tls_handshake_write,
-    .em_enc_flags = TLS_ENC_FLAG_SIGALGS,
-};
-
 static TLS_CIPHER tls1_2_ciphers[] = {
     {
         .cp_name = TLS1_TXT_ECDHE_RSA_WITH_AES_128_GCM_SHA256,

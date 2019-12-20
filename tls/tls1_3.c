@@ -6,6 +6,7 @@
 #include "cipher.h"
 
 TLS_ENC_METHOD const TLSv1_3_enc_data = {
+    .em_enc = tls1_3_enc,
     .em_set_handshake_header = tls_set_handshake_header,
     .em_setup_key_block = tls13_setup_key_block,
     .em_change_cipher_state = tls13_change_cipher_state,

@@ -6,6 +6,7 @@
 #include "statem_locl.h"
 #include "tls_locl.h"
 #include "handshake.h"
+#include "tls1.h"
 
 /* Sub state machine return values */
 typedef enum {

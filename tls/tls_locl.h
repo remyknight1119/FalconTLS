@@ -372,7 +372,7 @@ struct tls_t {
 #define TLS_GET_INIT_BUF_DATA(s)    GET_BUF_DATA(s->tls_init_buf)
  
 typedef struct tls_enc_method_t {
-    int         (*em_enc)(TLS *, TLS_RECORD *, uint32_t, int);
+    int         (*em_enc)(TLS *, TLS_RECORD *, size_t, int);
     int         (*em_mac)(TLS *, TLS_RECORD *, uint8_t *, int);
     int         (*em_set_handshake_header)(TLS *s, WPACKET *pkt, int mt);
     int         (*em_setup_key_block)(TLS *);
@@ -545,7 +545,7 @@ typedef enum tlsext_index_en {
 } TLSEXT_INDEX;
 
 
-TLS_ENC_METHOD const TLSv1_2_enc_data;
+TLS_ENC_METHOD const TLS_enc_data;
 TLS_ENC_METHOD const TLSv1_3_enc_data;
 
 typedef struct {  
@@ -627,6 +627,7 @@ int tls13_generate_handshake_secret(TLS *s, const unsigned char *insecret,
         size_t insecretlen);
 int tls13_setup_key_block(TLS *s);
 int tls13_change_cipher_state(TLS *s, int which);
+int tls1_3_enc(TLS *s, TLS_RECORD *recs, size_t n_recs, int sending);
 int tls_cipher_get_evp(const TLS_SESSION *s, const FC_EVP_CIPHER **enc,
         const FC_EVP_MD **md, int *mac_pkey_type,
         size_t *mac_secret_size, int use_etm);

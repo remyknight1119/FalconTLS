@@ -141,9 +141,17 @@ tls_get_message_header(TLS *s, int *mt)
                 FC_LOG("Error\n");
                 return 0;
             }
+
             if (recvd_type == TLS_RT_CHANGE_CIPHER_SPEC) {
                 FC_LOG("TLS_RT_CHANGE_CIPHER_SPEC\n");
-            } else if (recvd_type != TLS_RT_HANDSHAKE) {
+                s->tls_state.st_message_type = *mt = TLS_MT_CHANGE_CIPHER_SPEC;
+                s->tls_state.st_message_size = readbytes;
+                s->tls_init_msg = TLS_GET_INIT_BUF_DATA(s);
+                s->tls_init_num = readbytes - 1;
+                return 1;
+            }
+
+            if (recvd_type != TLS_RT_HANDSHAKE) {
                 FC_LOG("Error, recvd_type = %d\n", recvd_type);
                 return 0;
             }

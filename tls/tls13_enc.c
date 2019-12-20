@@ -432,3 +432,30 @@ tls13_change_cipher_state(TLS *s, int which)
 err:
     return ret;
 }
+
+int
+tls1_3_enc(TLS *s, TLS_RECORD *recs, size_t n_recs, int sending)
+{
+    TLS_ENC             *enc = NULL;
+    TLS_RECORD          *rec = NULL;
+
+    rec = &recs[0];
+    if (sending) {
+        enc = &s->tls_enc_write;
+    } else {
+        enc = &s->tls_enc_read;
+    }
+
+    if (enc->ec_ctx == NULL || rec->rd_type == TLS_RT_ALERT) {
+        memmove(rec->rd_data, rec->rd_input, rec->rd_length);
+        rec->rd_input = rec->rd_data;
+        FC_LOG("Plaintext\n");
+        return 1;
+    }
+
+        FC_LOG("Ciphertext\n");
+    return 1;
+}
+
+
+

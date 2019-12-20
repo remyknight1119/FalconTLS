@@ -40,8 +40,6 @@ struct _server_hello_t {
 typedef struct _server_hello_t server_hello_t;
 
 
-#define tls_set_handshake_header(s, pkt, mt) \
-        s->tls_method->md_tls_enc->em_set_handshake_header(s, pkt, mt)
 #define tls_hm_header_len(s) s->tls_method->md_tls_enc->em_hhlen
 
 
